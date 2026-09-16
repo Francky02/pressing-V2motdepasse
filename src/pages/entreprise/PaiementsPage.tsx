@@ -6,7 +6,6 @@ import {
   Search,
   RefreshCw,
   Sparkles,
-  TrendingUp,
   Receipt,
   X,
   AlertTriangle,
@@ -71,139 +70,157 @@ export const PaiementsPage: React.FC = () => {
   }, [paiements]);
 
   return (
-    <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+    <div style={{ maxWidth: '1350px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       {errorMsg && (
-        <div style={{ padding: '0.85rem 1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <AlertTriangle size={18} />
+        <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
+          <AlertTriangle size={15} />
           <span>{errorMsg}</span>
-          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={16} /></button>
+          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
-      {/* Header Banner */}
+
+      {/* Unified Compact Top Bar */}
       <div
         style={{
-          background: `linear-gradient(135deg, ${primaryColor}15 0%, rgba(15, 23, 42, 0.65) 100%)`,
-          border: `1px solid ${primaryColor}35`,
-          borderRadius: 'var(--radius-xl)',
-          padding: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '0.75rem 1rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '1.25rem',
+          gap: '0.75rem',
         }}
       >
-        <div>
-          <div className="badge-pill" style={{ marginBottom: '0.4rem' }}>
-            <CreditCard size={14} color={primaryColor} />
-            <span>Journal de Caisse • {company?.nom}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CreditCard size={16} />
           </div>
-          <h1 style={{ fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', fontWeight: 800, color: 'white', margin: 0 }}>
-            Historique des Encaissements
-          </h1>
-          <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', margin: '0.35rem 0 0 0' }}>
-            Tous les paiements enregistrés, versements partiels et règlements complets confirmés.
-          </p>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
+                Journal des Paiements
+              </h1>
+              <span style={{ fontSize: '0.72rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
+                {filteredPaiements.length}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+              Total des fonds encaissés : <strong style={{ color: '#34d399' }}>{totalCollected.toLocaleString('fr-FR')} FCFA</strong>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {/* Search & Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '0.35rem 0.65rem',
+              minWidth: '220px',
+            }}
+          >
+            <Search size={14} color="var(--text-muted)" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher paiement..."
+              style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.82rem', width: '100%', outline: 'none' }}
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={fetchPaiements}
             className="btn btn-secondary btn-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            style={{ padding: '0.35rem 0.6rem' }}
+            title="Actualiser"
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span>Actualiser</span>
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* Total Card */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <span style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 600 }}>Total des Fonds Encaissés</span>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#34d399', marginTop: '0.2rem' }}>
-            {totalCollected.toLocaleString('fr-FR')} <span style={{ fontSize: '1rem' }}>FCFA</span>
-          </div>
-        </div>
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-          {paiements.length} transaction(s) d'encaissement validée(s)
-        </div>
-      </div>
-
-      {/* Search */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-        <Search size={16} color="var(--text-muted)" />
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher par client, motif, référence, moyen..."
-          style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.88rem', width: '100%', outline: 'none' }}
-        />
-        {search && (
-          <button type="button" onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-            <X size={14} />
-          </button>
-        )}
-      </div>
-
-      {/* Table / List */}
+      {/* High-density Table */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-          <Sparkles className="animate-spin" size={28} color={primaryColor} style={{ margin: '0 auto 1rem auto' }} />
-          <div>Chargement du journal des paiements...</div>
+        <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+          <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.75rem auto' }} />
+          <div style={{ fontSize: '0.85rem' }}>Chargement du journal des paiements...</div>
         </div>
       ) : filteredPaiements.length === 0 ? (
-        <div style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '3.5rem 1.5rem', textAlign: 'center' }}>
-          <Receipt size={32} color="var(--text-muted)" style={{ margin: '0 auto 1rem auto' }} />
-          <h3 style={{ color: 'white', margin: '0 0 0.5rem 0', fontWeight: 700 }}>Aucun paiement trouvé</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Les encaissements enregistrés sur vos créances apparaîtront ici.</p>
+        <div style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+          <Receipt size={28} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem auto' }} />
+          <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>Aucun encaissement trouvé</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Les règlements enregistrés sur vos créances apparaîtront ici.</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filteredPaiements.map(p => (
-            <div
-              key={p.id}
-              style={{
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                padding: '1rem 1.25rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '1rem',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <TrendingUp size={18} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 800, color: 'white', fontSize: '0.95rem' }}>
-                    {p.client_nom}
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                    Motif : {p.motif_creance} • Réf : <strong style={{ color: 'var(--text-muted)' }}>{p.reference}</strong>
-                  </div>
-                </div>
-              </div>
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Client</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Motif Créance</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Référence & Notes</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Date</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>Moyen</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Montant Encaissé</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPaiements.map(p => (
+                  <tr
+                    key={p.id}
+                    style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.1s ease' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td style={{ padding: '0.65rem 0.85rem' }}>
+                      <div style={{ fontWeight: 700, color: 'white' }}>{p.client_nom}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{p.client_telephone}</div>
+                    </td>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#34d399' }}>
-                    +{p.montant.toLocaleString('fr-FR')} FCFA
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    {p.date_paiement} • Moyen : <span style={{ textTransform: 'uppercase', fontWeight: 700 }}>{p.moyen_paiement}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                    <td style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)' }}>
+                      {p.motif_creance}
+                    </td>
+
+                    <td style={{ padding: '0.65rem 0.85rem' }}>
+                      <span style={{ fontWeight: 700, color: 'white' }}>{p.reference}</span>
+                      {p.notes && <span style={{ color: 'var(--text-muted)', marginLeft: '0.35rem', fontSize: '0.72rem' }}>• {p.notes}</span>}
+                    </td>
+
+                    <td style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)' }}>
+                      {p.date_paiement}
+                    </td>
+
+                    <td style={{ padding: '0.65rem 0.85rem', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.68rem', padding: '0.12rem 0.4rem', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', color: 'white', fontWeight: 700, textTransform: 'uppercase' }}>
+                        {p.moyen_paiement}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                      <span style={{ fontWeight: 800, color: '#34d399', fontSize: '0.92rem' }}>
+                        +{p.montant.toLocaleString('fr-FR')} F
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

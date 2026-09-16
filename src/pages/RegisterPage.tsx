@@ -50,16 +50,16 @@ export const RegisterPage: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)' }}>
       {/* Top Simple Header */}
-      <header style={{ padding: '1.25rem 2rem', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(12px)' }}>
+      <header style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(12px)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link to="/" className="brand-logo-link">
-            <div className="brand-logo-icon">
-              <Sparkles size={20} />
+            <div className="brand-logo-icon" style={{ width: '32px', height: '32px' }}>
+              <Sparkles size={18} />
             </div>
-            <span className="brand-logo-text">Relancio</span>
-            <span className="brand-logo-tag">SaaS</span>
+            <span className="brand-logo-text" style={{ fontSize: '1.15rem' }}>Relancio</span>
+            <span className="brand-logo-tag" style={{ padding: '0.15rem 0.5rem', fontSize: '0.7rem' }}>SaaS</span>
           </Link>
-          <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
             Déjà un compte ?{' '}
             <Link to="/connexion" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
               Se connecter
@@ -69,27 +69,27 @@ export const RegisterPage: React.FC = () => {
       </header>
 
       {/* Main Registration Form Container */}
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 1rem' }}>
+      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem 1rem' }}>
         <div
           style={{
             width: '100%',
-            maxWidth: '620px',
+            maxWidth: '580px',
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-xl)',
-            padding: 'clamp(1.5rem, 4vw, 2.5rem)',
+            padding: '1.5rem 1.75rem',
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
           }}
         >
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div className="badge-pill" style={{ marginBottom: '0.75rem' }}>
-              <Building2 size={14} />
+          <div style={{ textAlign: 'center', marginBottom: '1.15rem' }}>
+            <div className="badge-pill" style={{ marginBottom: '0.5rem', padding: '0.2rem 0.65rem', fontSize: '0.75rem' }}>
+              <Building2 size={13} />
               <span>Création de compte Entreprise</span>
             </div>
-            <h1 style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.1rem)', fontWeight: 800, color: 'white', marginBottom: '0.5rem' }}>
+            <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'white', marginBottom: '0.25rem' }}>
               Commencer avec Relancio
             </h1>
-            <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
               Enregistrez vos créances et facilitez les paiements de vos clients dès aujourd'hui.
             </p>
           </div>
@@ -99,30 +99,30 @@ export const RegisterPage: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.65rem',
+                gap: '0.5rem',
                 background: 'rgba(244, 63, 94, 0.12)',
                 border: '1px solid rgba(244, 63, 94, 0.35)',
                 color: '#fb7185',
-                padding: '0.85rem 1rem',
+                padding: '0.65rem 0.85rem',
                 borderRadius: 'var(--radius-md)',
-                marginBottom: '1.5rem',
-                fontSize: '0.88rem',
+                marginBottom: '1rem',
+                fontSize: '0.82rem',
               }}
             >
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {/* Nom Entreprise & Responsable */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                   Nom de l'entreprise *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Building2 size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Building2 size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
                     required
@@ -134,9 +134,9 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.75rem 1rem 0.75rem 2.4rem',
+                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
                       color: 'white',
-                      fontSize: '0.92rem',
+                      fontSize: '0.88rem',
                       outline: 'none',
                     }}
                   />
@@ -144,11 +144,11 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                   Nom du responsable *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <User size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <User size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
                     required
@@ -160,9 +160,9 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.75rem 1rem 0.75rem 2.4rem',
+                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
                       color: 'white',
-                      fontSize: '0.92rem',
+                      fontSize: '0.88rem',
                       outline: 'none',
                     }}
                   />
@@ -171,13 +171,13 @@ export const RegisterPage: React.FC = () => {
             </div>
 
             {/* Email & Téléphone */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                   Email professionnel *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Mail size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="email"
                     required
@@ -189,9 +189,9 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.75rem 1rem 0.75rem 2.4rem',
+                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
                       color: 'white',
-                      fontSize: '0.92rem',
+                      fontSize: '0.88rem',
                       outline: 'none',
                     }}
                   />
@@ -199,11 +199,11 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                   Téléphone / WhatsApp *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Phone size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Phone size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="tel"
                     required
@@ -215,9 +215,9 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.75rem 1rem 0.75rem 2.4rem',
+                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
                       color: 'white',
-                      fontSize: '0.92rem',
+                      fontSize: '0.88rem',
                       outline: 'none',
                     }}
                   />
@@ -227,7 +227,7 @@ export const RegisterPage: React.FC = () => {
 
             {/* Secteur d'activité */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                 Secteur d'activité principal *
               </label>
               <select
@@ -238,9 +238,9 @@ export const RegisterPage: React.FC = () => {
                   background: '#111827',
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-md)',
-                  padding: '0.75rem 1rem',
+                  padding: '0.65rem 0.85rem',
                   color: 'white',
-                  fontSize: '0.92rem',
+                  fontSize: '0.88rem',
                   outline: 'none',
                   cursor: 'pointer',
                 }}
@@ -257,13 +257,13 @@ export const RegisterPage: React.FC = () => {
             </div>
 
             {/* Mot de passe & Confirmation */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                   Mot de passe *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Lock size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="password"
                     required
@@ -275,9 +275,9 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.75rem 1rem 0.75rem 2.4rem',
+                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
                       color: 'white',
-                      fontSize: '0.92rem',
+                      fontSize: '0.88rem',
                       outline: 'none',
                     }}
                   />
@@ -285,11 +285,11 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                   Confirmer le mot de passe *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Lock size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="password"
                     required
@@ -301,9 +301,9 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.75rem 1rem 0.75rem 2.4rem',
+                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
                       color: 'white',
-                      fontSize: '0.92rem',
+                      fontSize: '0.88rem',
                       outline: 'none',
                     }}
                   />
@@ -316,14 +316,14 @@ export const RegisterPage: React.FC = () => {
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-lg btn-glow"
-              style={{ marginTop: '0.75rem', width: '100%' }}
+              style={{ marginTop: '0.35rem', width: '100%', padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
             >
               {loading ? (
                 <span>Création du compte en cours...</span>
               ) : (
                 <>
                   <span>Créer mon compte entreprise</span>
-                  <ArrowRight size={18} />
+                  <ArrowRight size={16} />
                 </>
               )}
             </button>
@@ -332,28 +332,28 @@ export const RegisterPage: React.FC = () => {
           {/* Guarantees */}
           <div
             style={{
-              marginTop: '1.75rem',
-              paddingTop: '1.25rem',
+              marginTop: '1.15rem',
+              paddingTop: '0.85rem',
               borderTop: '1px solid var(--border-subtle)',
               display: 'flex',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '0.75rem',
-              fontSize: '0.78rem',
+              gap: '0.5rem',
+              fontSize: '0.75rem',
               color: 'var(--text-muted)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <CheckCircle2 size={14} color="var(--primary)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <CheckCircle2 size={13} color="var(--primary)" />
               <span>0€ d'abonnement obligatoire</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <CheckCircle2 size={14} color="var(--primary)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <CheckCircle2 size={13} color="var(--primary)" />
               <span>Données isolées et sécurisées</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <CheckCircle2 size={14} color="var(--primary)" />
-              <span>Accès immédiat au dashboard</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <CheckCircle2 size={13} color="var(--primary)" />
+              <span>Accès immédiat</span>
             </div>
           </div>
         </div>

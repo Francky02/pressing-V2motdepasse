@@ -197,3 +197,9 @@ authRouter.get('/me', requireAuth, (req: AuthenticatedRequest, res: Response) =>
     company: req.company,
   });
 });
+
+// Déconnexion (confirmation côté serveur pour cycle propre)
+authRouter.post('/logout', (req, res: Response) => {
+  return res.json({ message: 'Session terminée avec succès' });
+});
+

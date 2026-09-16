@@ -32,6 +32,10 @@ export async function apiRequest<T = unknown>(
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    // Si la session est révoquée/invalide (401), déclencher l'événement d'invalidation
+    if (response.status === 401 && !endpoint.includes('/login') && !endpoint.includes('/register')) {
+      window.dispatchEvent(new CustomEvent('relancio_unauthorized'));
+    }
     const message = data.error || data.message || `Erreur requête (${response.status})`;
     throw new Error(message);
   }

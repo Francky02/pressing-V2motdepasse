@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
@@ -19,7 +19,6 @@ import {
 export const EntrepriseLayout: React.FC = () => {
   const { user, company, isAuthenticated, isLoading, logout } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if (isLoading) {
@@ -48,7 +47,6 @@ export const EntrepriseLayout: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/connexion');
   };
 
   const primaryColor = company?.couleur_principale || '#10b981';
@@ -71,12 +69,12 @@ export const EntrepriseLayout: React.FC = () => {
         className="sidebar-desktop"
       >
         {/* Company Header in Sidebar */}
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+        <div style={{ padding: '1.15rem 1.25rem', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
             <div
               style={{
-                width: '40px',
-                height: '40px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '10px',
                 backgroundColor: primaryColor,
                 display: 'flex',
@@ -84,33 +82,33 @@ export const EntrepriseLayout: React.FC = () => {
                 justifyContent: 'center',
                 overflow: 'hidden',
                 flexShrink: 0,
-                boxShadow: `0 4px 12px ${primaryColor}44`,
+                boxShadow: `0 3px 10px ${primaryColor}44`,
               }}
             >
               {company?.logo ? (
                 <img src={company.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
-                <Building2 size={20} color="white" />
+                <Building2 size={18} color="white" />
               )}
             </div>
             <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontWeight: 800, color: 'white', fontSize: '0.98rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              <div style={{ fontWeight: 800, color: 'white', fontSize: '0.92rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                 {company?.nom || 'Mon Entreprise'}
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 {company?.secteur || 'Entreprise'}
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px', width: 'fit-content' }}>
-            <ShieldCheck size={12} />
-            <span>Espace Tenant Isolé</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.1)', padding: '0.15rem 0.45rem', borderRadius: '4px', width: 'fit-content' }}>
+            <ShieldCheck size={11} />
+            <span>Espace Isolé</span>
           </div>
         </div>
 
         {/* Navigation links */}
-        <nav style={{ flex: 1, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+        <nav style={{ flex: 1, padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {navItems.map(item => {
             const isActive = location.pathname === item.path;
             return (
@@ -120,14 +118,14 @@ export const EntrepriseLayout: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1rem',
+                  gap: '0.65rem',
+                  padding: '0.58rem 0.85rem',
                   borderRadius: 'var(--radius-md)',
                   color: isActive ? '#ffffff' : 'var(--text-secondary)',
                   background: isActive ? `${primaryColor}22` : 'transparent',
                   border: isActive ? `1px solid ${primaryColor}55` : '1px solid transparent',
                   fontWeight: isActive ? 700 : 500,
-                  fontSize: '0.92rem',
+                  fontSize: '0.86rem',
                   textDecoration: 'none',
                   transition: 'all 0.15s ease',
                 }}
@@ -305,8 +303,8 @@ export const EntrepriseLayout: React.FC = () => {
         )}
 
         {/* Sub-route view */}
-        <main style={{ flex: 1, padding: 'clamp(1rem, 3vw, 2.25rem)' }}>
-          <Outlet />
+        <main style={{ flex: 1, padding: 'clamp(0.75rem, 2vw, 1.25rem)' }}>
+          <Outlet key={`${company?.id || 'none'}-${user?.id || 'none'}`} />
         </main>
       </div>
 

@@ -45,9 +45,9 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  loginAdmin: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterFormData) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  loginAdmin: (email: string, password: string) => Promise<User>;
+  register: (data: RegisterFormData) => Promise<User>;
   logout: () => void;
   refreshSession: () => Promise<void>;
   updateCompanyProfile: (updates: Partial<Entreprise>) => Promise<Entreprise>;
@@ -55,6 +55,36 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Nettoyage complet des stockages côté client
+const clearBrowserSessionStorage = () => {
+  try {
+    // 1. Nettoyer localStorage de toutes les clés de session Relancio
+    localStorage.removeItem('relancio_token');
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('relancio_')) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // 2. Nettoyer complètement sessionStorage
+    sessionStorage.clear();
+
+    // 3. Expirer immédiatement les cookies du domaine
+    if (typeof document !== 'undefined' && document.cookie) {
+      document.cookie.split(';').forEach((cookie) => {
+        const eqPos = cookie.indexOf('=');
+        const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+        if (name) {
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Erreur lors du nettoyage du stockage:', err);
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -78,8 +108,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCompany(res.company);
         }
       } catch (err) {
-        console.warn('Session expiré ou invalide:', err);
-        localStorage.removeItem('relancio_token');
+        console.warn('Session expirée ou invalide:', err);
+        clearBrowserSessionStorage();
         setToken(null);
         setUser(null);
         setCompany(null);
@@ -91,8 +121,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
-    const res = await apiRequest<{ token: string; user: User; company: Entreprise }>('/api/auth/login', {
+  const logout = () => {
+    // 1. Notification au serveur (best-effort pour clore le cycle)
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+
+    // 2. Suppression de tous les stockages de session (localStorage, sessionStorage, cookies)
+    clearBrowserSessionStorage();
+
+    // 3. Réinitialisation complète du state React
+    setToken(null);
+    setUser(null);
+    setCompany(null);
+    setIsLoading(false);
+
+    // 4. Événement global pour nettoyer d'éventuels caches mémoire
+    window.dispatchEvent(new CustomEvent('relancio_logout'));
+
+    // 5. Redirection propre et inconditionnelle vers /connexion en remplaçant l'historique
+    window.location.replace('/connexion');
+  };
+
+  // Synchronisation avec les événements de déconnexion et protection bfcache (bouton Précédent/Suivant)
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // Si la page est restaurée depuis le cache navigateur (bfcache) ou si le token est absent
+      const storedToken = localStorage.getItem('relancio_token');
+      if (event.persisted || !storedToken) {
+        setToken(null);
+        setUser(null);
+        setCompany(null);
+        const path = window.location.pathname;
+        if (path.startsWith('/entreprise') || path.startsWith('/admin')) {
+          window.location.replace('/connexion');
+        }
+      }
+    };
+
+    window.addEventListener('relancio_unauthorized', handleUnauthorized);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      window.removeEventListener('relancio_unauthorized', handleUnauthorized);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
+
+  const login = async (email: string, password: string): Promise<User> => {
+    const res = await apiRequest<{ token: string; user: User; company?: Entreprise }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -100,10 +179,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('relancio_token', res.token);
     setToken(res.token);
     setUser(res.user);
-    setCompany(res.company);
+    setCompany(res.company || null);
+    return res.user;
   };
 
-  const loginAdmin = async (email: string, password: string): Promise<void> => {
+  const loginAdmin = async (email: string, password: string): Promise<User> => {
     const res = await apiRequest<{ token: string; user: User }>('/api/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -113,9 +193,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(res.token);
     setUser(res.user);
     setCompany(null);
+    return res.user;
   };
 
-  const register = async (data: RegisterFormData): Promise<void> => {
+  const register = async (data: RegisterFormData): Promise<User> => {
     const res = await apiRequest<{ token: string; user: User; company: Entreprise }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -125,13 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(res.token);
     setUser(res.user);
     setCompany(res.company);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('relancio_token');
-    setToken(null);
-    setUser(null);
-    setCompany(null);
+    return res.user;
   };
 
   const refreshSession = async () => {

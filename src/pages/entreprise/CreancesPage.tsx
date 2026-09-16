@@ -14,8 +14,6 @@ import {
   ExternalLink,
   Copy,
   Sparkles,
-  Building2,
-  Calendar,
 } from 'lucide-react';
 
 interface ClientOption {
@@ -204,7 +202,7 @@ export const CreancesPage: React.FC = () => {
       setErrorMsg(err instanceof Error ? err.message : 'Erreur création client');
     } finally {
       setActionLoading(false);
-      setTimeout(() => setSuccessMsg(null), 3500);
+      setTimeout(() => setSuccessMsg(null), 3000);
     }
   };
 
@@ -245,14 +243,14 @@ export const CreancesPage: React.FC = () => {
         }),
       });
 
-      setSuccessMsg(`Créance de ${amount.toLocaleString('fr-FR')} FCFA enregistrée avec succès`);
+      setSuccessMsg(`Créance de ${amount.toLocaleString('fr-FR')} FCFA enregistrée`);
       setIsCreateModalOpen(false);
       await fetchData();
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement de la créance');
     } finally {
       setActionLoading(false);
-      setTimeout(() => setSuccessMsg(null), 4000);
+      setTimeout(() => setSuccessMsg(null), 3500);
     }
   };
 
@@ -296,16 +294,15 @@ export const CreancesPage: React.FC = () => {
         }),
       });
 
-      setSuccessMsg(`Encaissement de ${amount.toLocaleString('fr-FR')} FCFA validé avec succès !`);
+      setSuccessMsg(`Encaissement de ${amount.toLocaleString('fr-FR')} FCFA validé !`);
       setIsPaymentModalOpen(false);
       await fetchData();
-      // Rafraîchir les détails de la créance
       await openCreanceDetail(selectedCreanceDetail.creance.id);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement du paiement');
     } finally {
       setActionLoading(false);
-      setTimeout(() => setSuccessMsg(null), 4000);
+      setTimeout(() => setSuccessMsg(null), 3500);
     }
   };
 
@@ -338,12 +335,14 @@ export const CreancesPage: React.FC = () => {
     let collected = 0;
     let overdueCount = 0;
     let pendingCount = 0;
+    let partialCount = 0;
 
     for (const c of creances) {
       toRecover += c.solde;
       collected += c.montant_paye;
       if (c.statut === 'en_retard') overdueCount++;
-      if (c.solde > 0) pendingCount++;
+      if (c.statut === 'en_attente') pendingCount++;
+      if (c.statut === 'partiellement_payee') partialCount++;
     }
 
     return {
@@ -351,6 +350,7 @@ export const CreancesPage: React.FC = () => {
       collected,
       overdueCount,
       pendingCount,
+      partialCount,
     };
   }, [creances]);
 
@@ -358,26 +358,26 @@ export const CreancesPage: React.FC = () => {
     switch (statut) {
       case 'payee':
         return (
-          <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+          <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
             PAYÉE
           </span>
         );
       case 'partiellement_payee':
         return (
-          <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-            PARTIELLEMENT PAYÉE
+          <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            PARTIELLE
           </span>
         );
       case 'en_retard':
         return (
-          <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+          <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
             EN RETARD
           </span>
         );
       case 'en_attente':
       default:
         return (
-          <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+          <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
             EN ATTENTE
           </span>
         );
@@ -385,365 +385,311 @@ export const CreancesPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+    <div style={{ maxWidth: '1350px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       {/* Alertes messages */}
       {errorMsg && (
-        <div style={{ padding: '0.85rem 1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <AlertTriangle size={18} />
+        <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
+          <AlertTriangle size={15} />
           <span>{errorMsg}</span>
-          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={16} /></button>
+          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
       {successMsg && (
-        <div style={{ padding: '0.85rem 1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <CheckCircle2 size={18} />
+        <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
+          <CheckCircle2 size={15} />
           <span>{successMsg}</span>
-          <button type="button" onClick={() => setSuccessMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={16} /></button>
+          <button type="button" onClick={() => setSuccessMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
-      {/* Header Banner */}
-      <div
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor}15 0%, rgba(15, 23, 42, 0.65) 100%)`,
-          border: `1px solid ${primaryColor}35`,
-          borderRadius: 'var(--radius-xl)',
-          padding: 'clamp(1.25rem, 2.5vw, 1.75rem)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1.25rem',
-        }}
-      >
-        <div>
-          <div className="badge-pill" style={{ marginBottom: '0.4rem' }}>
-            <FileText size={14} color={primaryColor} />
-            <span>Créances & Dettes Clients • {company?.nom}</span>
-          </div>
-          <h1 style={{ fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)', fontWeight: 800, color: 'white', margin: 0 }}>
-            Suivi des Créances & Encaissements
-          </h1>
-          <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', margin: '0.35rem 0 0 0' }}>
-            Qui vous doit de l'argent ? Combien ? Pour quoi ? Et pour quelle échéance ?
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={fetchData}
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span>Actualiser</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: primaryColor, borderColor: primaryColor }}
-          >
-            <Plus size={16} />
-            <span>Nouvelle créance</span>
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Stats Bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.78rem', color: '#f87171', fontWeight: 600 }}>Total à Récupérer</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f87171', marginTop: '0.25rem' }}>
-            {stats.toRecover.toLocaleString('fr-FR')} <span style={{ fontSize: '0.88rem' }}>FCFA</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            {stats.pendingCount} créance(s) avec solde dû
-          </div>
-        </div>
-
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.78rem', color: '#34d399', fontWeight: 600 }}>Total Déjà Encaissé</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#34d399', marginTop: '0.25rem' }}>
-            {stats.collected.toLocaleString('fr-FR')} <span style={{ fontSize: '0.88rem' }}>FCFA</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Fonds effectivement reçus
-          </div>
-        </div>
-
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.78rem', color: stats.overdueCount > 0 ? '#f87171' : 'var(--text-muted)', fontWeight: 600 }}>
-            Créances en Retard
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: stats.overdueCount > 0 ? '#f87171' : 'white', marginTop: '0.25rem' }}>
-            {stats.overdueCount}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            Échéances dépassées à relancer
-          </div>
-        </div>
-      </div>
-
-      {/* Search & Filter Bar */}
+      {/* Unified Compact Top Bar : Titre, Recherche, Filtres, KPIs & Action */}
       <div
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-lg)',
-          padding: '1rem',
+          padding: '0.75rem 1rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '1rem',
+          gap: '0.75rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flex: 1, minWidth: '240px' }}>
-          <Search size={16} color="var(--text-muted)" />
+        {/* Title & Stats */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${primaryColor}20`, color: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <FileText size={16} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
+                Créances
+              </h1>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
+                {filteredCreances.length}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+              À récupérer : <strong style={{ color: '#f87171' }}>{stats.toRecover.toLocaleString('fr-FR')} F</strong> • En retard : <strong style={{ color: stats.overdueCount > 0 ? '#f87171' : 'var(--text-muted)' }}>{stats.overdueCount}</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Input */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '0.35rem 0.65rem',
+            minWidth: '200px',
+            flex: 1,
+            maxWidth: '280px',
+          }}
+        >
+          <Search size={14} color="var(--text-muted)" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher par client, motif, téléphone..."
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'white',
-              fontSize: '0.88rem',
-              width: '100%',
-              outline: 'none',
-            }}
+            placeholder="Rechercher client, motif..."
+            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.82rem', width: '100%', outline: 'none' }}
           />
           {search && (
             <button type="button" onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-              <X size={14} />
+              <X size={12} />
             </button>
           )}
         </div>
 
-        {/* Filter buttons */}
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          {[
-            { id: 'toutes', label: 'Toutes' },
-            { id: 'en_attente', label: 'En attente' },
-            { id: 'partiellement_payee', label: 'Partielles' },
-            { id: 'en_retard', label: 'En retard' },
-            { id: 'payee', label: 'Payées' },
-          ].map(f => {
-            const isActive = statusFilter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setStatusFilter(f.id)}
-                style={{
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: isActive ? `1px solid ${primaryColor}` : '1px solid var(--border-subtle)',
-                  background: isActive ? `${primaryColor}22` : 'transparent',
-                  color: isActive ? 'white' : 'var(--text-secondary)',
-                }}
-              >
-                {f.label}
-              </button>
-            );
-          })}
+        {/* Filters pills & Action button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', padding: '0.15rem' }}>
+            {[
+              { id: 'toutes', label: 'Toutes' },
+              { id: 'en_attente', label: 'En attente' },
+              { id: 'partiellement_payee', label: 'Partielles' },
+              { id: 'en_retard', label: 'En retard' },
+              { id: 'payee', label: 'Payées' },
+            ].map(f => {
+              const isActive = statusFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setStatusFilter(f.id)}
+                  style={{
+                    padding: '0.3rem 0.55rem',
+                    borderRadius: 'var(--radius-xs)',
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: isActive ? `${primaryColor}30` : 'transparent',
+                    color: isActive ? 'white' : 'var(--text-secondary)',
+                  }}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchData}
+            className="btn btn-secondary btn-sm"
+            style={{ padding: '0.35rem 0.55rem' }}
+            title="Actualiser"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="btn btn-primary btn-sm"
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem', backgroundColor: primaryColor, borderColor: primaryColor }}
+          >
+            <Plus size={14} />
+            <span>Nouvelle créance</span>
+          </button>
         </div>
       </div>
 
-      {/* Creances List */}
+      {/* High-density Debts Table */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-          <Sparkles className="animate-spin" size={28} color={primaryColor} style={{ margin: '0 auto 1rem auto' }} />
-          <div>Chargement des créances...</div>
+        <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+          <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.75rem auto' }} />
+          <div style={{ fontSize: '0.85rem' }}>Chargement des créances...</div>
         </div>
       ) : filteredCreances.length === 0 ? (
         <div
           style={{
             background: 'var(--bg-surface)',
             border: '1px dashed var(--border-subtle)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '3.5rem 1.5rem',
+            borderRadius: 'var(--radius-lg)',
+            padding: '2.5rem 1.5rem',
             textAlign: 'center',
           }}
         >
-          <div
-            style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: '16px',
-              background: `${primaryColor}15`,
-              color: primaryColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1rem auto',
-            }}
-          >
-            <FileText size={28} />
+          <FileText size={28} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem auto' }} />
+          <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>
+            {search ? 'Aucune créance ne correspond aux critères' : 'Aucune créance pour l\'instant'}
           </div>
-          <h3 style={{ color: 'white', margin: '0 0 0.5rem 0', fontWeight: 700 }}>
-            {search ? 'Aucune créance ne correspond à votre filtre' : 'Aucune créance enregistrée pour l\'instant'}
-          </h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', maxWidth: '460px', margin: '0 auto 1.5rem auto' }}>
-            {search
-              ? 'Essayez de changer les filtres de recherche.'
-              : 'Enregistrez votre première créance pour savoir immédiatement qui vous doit quoi.'}
-          </p>
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="btn btn-primary"
-            style={{ backgroundColor: primaryColor, borderColor: primaryColor }}
+            className="btn btn-primary btn-sm"
+            style={{ marginTop: '1rem', backgroundColor: primaryColor, borderColor: primaryColor }}
           >
-            <Plus size={16} />
+            <Plus size={14} />
             <span>Créer une créance</span>
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {filteredCreances.map(creance => {
-            const percentPaid = creance.montant_total > 0
-              ? Math.min(100, Math.round((creance.montant_paye / creance.montant_total) * 100))
-              : 0;
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Client & Contact</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Motif & Description</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Montant Total</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Payé</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Solde Dû</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Échéance</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>Statut</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCreances.map(creance => {
+                  const percentPaid = creance.montant_total > 0
+                    ? Math.min(100, Math.round((creance.montant_paye / creance.montant_total) * 100))
+                    : 0;
+                  const isOverdue = creance.statut === 'en_retard';
 
-            return (
-              <div
-                key={creance.id}
-                onClick={() => openCreanceDetail(creance.id)}
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: creance.statut === 'en_retard' ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '1.25rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '1.25rem',
-                  cursor: 'pointer',
-                  flexWrap: 'wrap',
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = primaryColor;
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = creance.statut === 'en_retard' ? 'rgba(239, 68, 68, 0.35)' : 'var(--border-subtle)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                {/* Client & Motif */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '220px', flex: 1 }}>
-                  <div
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: `${primaryColor}20`,
-                      color: primaryColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <FileText size={20} />
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 800, color: 'white', fontSize: '1rem' }}>
-                        {creance.client_nom || 'Client'}
-                      </span>
-                      {getStatusBadge(creance.statut)}
-                    </div>
-                    <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                      {creance.motif}
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
-                      <Calendar size={12} />
-                      <span>Échéance : <strong>{creance.date_echeance}</strong></span>
-                      {creance.client_telephone && (
-                        <>
-                          <span>•</span>
-                          <span>{creance.client_telephone}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress bar and amounts */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '200px', flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Montant Total :</span>
-                    <strong style={{ color: 'white' }}>{creance.montant_total.toLocaleString('fr-FR')} FCFA</strong>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                    <span style={{ color: '#34d399' }}>Payé ({percentPaid}%) :</span>
-                    <strong style={{ color: '#34d399' }}>{creance.montant_paye.toLocaleString('fr-FR')} FCFA</strong>
-                  </div>
-
-                  {/* Visual Progress Bar */}
-                  <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ width: `${percentPaid}%`, height: '100%', background: percentPaid === 100 ? '#10b981' : primaryColor, borderRadius: '3px' }} />
-                  </div>
-                </div>
-
-                {/* Solde restant & Actions */}
-                <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Solde restant dû</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: creance.solde > 0 ? '#f87171' : '#34d399' }}>
-                      {creance.solde.toLocaleString('fr-FR')} <span style={{ fontSize: '0.8rem' }}>FCFA</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    {creance.solde > 0 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCreanceDetail(creance.id).then(() => {
-                            handleOpenPayment(creance);
-                          });
-                        }}
-                        className="btn btn-primary btn-sm"
-                        style={{ fontSize: '0.76rem', padding: '0.45rem 0.75rem', backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                      >
-                        <CreditCard size={13} />
-                        <span>Encaisser</span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
+                  return (
+                    <tr
+                      key={creance.id}
                       onClick={() => openCreanceDetail(creance.id)}
-                      className="btn btn-secondary btn-sm"
-                      style={{ fontSize: '0.76rem', padding: '0.45rem 0.75rem' }}
+                      style={{
+                        borderBottom: '1px solid var(--border-subtle)',
+                        background: isOverdue ? 'rgba(239, 68, 68, 0.03)' : 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background 0.1s ease',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = isOverdue ? 'rgba(239, 68, 68, 0.03)' : 'transparent')}
                     >
-                      Détails
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      {/* Client */}
+                      <td style={{ padding: '0.65rem 0.85rem' }}>
+                        <div style={{ fontWeight: 700, color: 'white' }}>{creance.client_nom}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{creance.client_telephone}</div>
+                      </td>
+
+                      {/* Motif */}
+                      <td style={{ padding: '0.65rem 0.85rem' }}>
+                        <div style={{ fontWeight: 600, color: 'white' }}>{creance.motif}</div>
+                        {creance.description && creance.description !== creance.motif && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                            {creance.description}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Montant total */}
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right', fontWeight: 700, color: 'white' }}>
+                        {creance.montant_total.toLocaleString('fr-FR')} F
+                      </td>
+
+                      {/* Montant payé */}
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                        <div style={{ color: '#34d399', fontWeight: 600 }}>{creance.montant_paye.toLocaleString('fr-FR')} F</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{percentPaid}%</div>
+                      </td>
+
+                      {/* Solde restant dû */}
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            padding: '0.15rem 0.45rem',
+                            borderRadius: '4px',
+                            background: creance.solde > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                            color: creance.solde > 0 ? '#f87171' : '#34d399',
+                            border: creance.solde > 0 ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                          }}
+                        >
+                          {creance.solde.toLocaleString('fr-FR')} F
+                        </span>
+                      </td>
+
+                      {/* Échéance */}
+                      <td style={{ padding: '0.65rem 0.85rem' }}>
+                        <div style={{ color: isOverdue ? '#f87171' : 'var(--text-secondary)', fontWeight: isOverdue ? 700 : 500 }}>
+                          {creance.date_echeance}
+                        </div>
+                      </td>
+
+                      {/* Statut badge */}
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'center' }}>
+                        {getStatusBadge(creance.statut)}
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.35rem' }} onClick={e => e.stopPropagation()}>
+                          {creance.solde > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCreanceDetail(creance.id).then(() => {
+                                  handleOpenPayment(creance);
+                                });
+                              }}
+                              className="btn btn-primary btn-sm"
+                              style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                            >
+                              <CreditCard size={12} />
+                              <span>Encaisser</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openCreanceDetail(creance.id)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }}
+                          >
+                            Détails
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* ==================================================== */}
-      {/* MODAL 1 : NOUVELLE CRÉANCE */}
+      {/* MODAL 1 : NOUVELLE CRÉANCE (2-COLUMN COMPACT GRID) */}
       {/* ==================================================== */}
       {isCreateModalOpen && (
         <div
@@ -767,68 +713,57 @@ export const CreancesPage: React.FC = () => {
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-xl)',
+              borderRadius: 'var(--radius-lg)',
               width: '100%',
-              maxWidth: '560px',
-              padding: '1.75rem',
+              maxWidth: '540px',
+              padding: '1.25rem',
               boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
               maxHeight: '92vh',
               overflowY: 'auto',
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${primaryColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FileText size={18} color={primaryColor} />
-                </div>
-                <h3 style={{ color: 'white', margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>
-                  Enregistrer une nouvelle créance
-                </h3>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
+                Enregistrer une nouvelle créance
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
                 style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveCreance} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Choix du client avec raccourci ajout rapide */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                    Client débiteur *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsFastClientModalOpen(true)}
-                    style={{ background: 'none', border: 'none', color: primaryColor, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                  >
-                    <Plus size={12} />
-                    <span>Créer un nouveau client</span>
-                  </button>
-                </div>
-
-                {clients.length === 0 ? (
-                  <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 'var(--radius-sm)', color: '#f87171', fontSize: '0.8rem' }}>
-                    Aucun client enregistré. Cliquez sur "Créer un nouveau client" ci-dessus.
+            <form onSubmit={handleSaveCreance} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* Row 1: Client & Motif */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      Client débiteur *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsFastClientModalOpen(true)}
+                      style={{ background: 'none', border: 'none', color: primaryColor, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      + Nouveau
+                    </button>
                   </div>
-                ) : (
                   <select
                     required
                     value={createForm.client_id}
                     onChange={e => setCreateForm({ ...createForm, client_id: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '0.7rem 0.9rem',
+                      padding: '0.55rem 0.75rem',
                       borderRadius: 'var(--radius-sm)',
                       background: 'var(--bg-main)',
                       border: '1px solid var(--border-subtle)',
                       color: 'white',
-                      fontSize: '0.88rem',
+                      fontSize: '0.84rem',
                       outline: 'none',
                     }}
                   >
@@ -838,111 +773,66 @@ export const CreancesPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                )}
-              </div>
+                </div>
 
-              {/* Motif (Multi-secteurs) */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 600 }}>
-                  Motif de la créance *
-                </label>
-                <select
-                  value={createForm.motif}
-                  onChange={e => setCreateForm({ ...createForm, motif: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.7rem 0.9rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--bg-main)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'white',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="Prestation de service">Prestation de service</option>
-                  <option value="Produit / Marchandise">Produit / Vente de marchandise</option>
-                  <option value="Réparation / SAV">Réparation mécanique / Électronique / SAV</option>
-                  <option value="Scolarité / Écolage">Scolarité / Cantine / Formation</option>
-                  <option value="Nettoyage / Pressing">Nettoyage / Blanchisserie / Pressing</option>
-                  <option value="Commande / Devis">Commande / Devis validé</option>
-                  <option value="Honoraires / Consultation">Honoraires / Consultation</option>
-                  <option value="Autre">Autre motif personnalisé</option>
-                </select>
-
-                {createForm.motif === 'Autre' && (
-                  <input
-                    type="text"
-                    required
-                    placeholder="Précisez le motif..."
-                    value={createForm.custom_motif}
-                    onChange={e => setCreateForm({ ...createForm, custom_motif: e.target.value })}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
+                    Motif de la créance *
+                  </label>
+                  <select
+                    value={createForm.motif}
+                    onChange={e => setCreateForm({ ...createForm, motif: e.target.value })}
                     style={{
                       width: '100%',
-                      marginTop: '0.5rem',
-                      padding: '0.65rem 0.9rem',
+                      padding: '0.55rem 0.75rem',
                       borderRadius: 'var(--radius-sm)',
-                      background: 'rgba(255,255,255,0.04)',
+                      background: 'var(--bg-main)',
                       border: '1px solid var(--border-subtle)',
                       color: 'white',
-                      fontSize: '0.85rem',
+                      fontSize: '0.84rem',
                       outline: 'none',
                     }}
-                  />
-                )}
+                  >
+                    <option value="Prestation de service">Prestation de service</option>
+                    <option value="Produit / Marchandise">Produit / Marchandise</option>
+                    <option value="Réparation / SAV">Réparation / SAV</option>
+                    <option value="Scolarité / Écolage">Scolarité / Écolage</option>
+                    <option value="Nettoyage / Pressing">Nettoyage / Pressing</option>
+                    <option value="Commande / Devis">Commande / Devis</option>
+                    <option value="Honoraires">Honoraires</option>
+                    <option value="Autre">Autre motif...</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Montant total */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 600 }}>
-                  Montant total dû (FCFA) *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  placeholder="Ex: 100000"
-                  value={createForm.montant_total}
-                  onChange={e => setCreateForm({ ...createForm, montant_total: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.7rem 0.9rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'white',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
-              {/* Dates : Création & Échéance */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              {/* Row 2: Montant & Échéance */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 600 }}>
-                    Date de la créance
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
+                    Montant total dû (FCFA) *
                   </label>
                   <input
-                    type="date"
+                    type="number"
+                    min="1"
                     required
-                    value={createForm.date_creation}
-                    onChange={e => setCreateForm({ ...createForm, date_creation: e.target.value })}
+                    placeholder="Ex: 100000"
+                    value={createForm.montant_total}
+                    onChange={e => setCreateForm({ ...createForm, montant_total: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '0.65rem 0.8rem',
+                      padding: '0.55rem 0.75rem',
                       borderRadius: 'var(--radius-sm)',
                       background: 'rgba(255,255,255,0.04)',
                       border: '1px solid var(--border-subtle)',
                       color: 'white',
-                      fontSize: '0.85rem',
+                      fontSize: '0.84rem',
                       outline: 'none',
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 600 }}>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
                     Date d'échéance *
                   </label>
                   <input
@@ -952,12 +842,12 @@ export const CreancesPage: React.FC = () => {
                     onChange={e => setCreateForm({ ...createForm, date_echeance: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '0.65rem 0.8rem',
+                      padding: '0.55rem 0.75rem',
                       borderRadius: 'var(--radius-sm)',
                       background: 'rgba(255,255,255,0.04)',
                       border: '1px solid var(--border-subtle)',
                       color: 'white',
-                      fontSize: '0.85rem',
+                      fontSize: '0.84rem',
                       outline: 'none',
                     }}
                   />
@@ -966,33 +856,32 @@ export const CreancesPage: React.FC = () => {
 
               {/* Description */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', fontWeight: 600 }}>
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
                   Description des prestations / articles
                 </label>
-                <textarea
-                  rows={2}
+                <input
+                  type="text"
                   value={createForm.description}
                   onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
-                  placeholder="Détails pour la facture ou le reçu..."
+                  placeholder="Détails facturés..."
                   style={{
                     width: '100%',
-                    padding: '0.7rem 0.9rem',
+                    padding: '0.55rem 0.75rem',
                     borderRadius: 'var(--radius-sm)',
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid var(--border-subtle)',
                     color: 'white',
-                    fontSize: '0.88rem',
+                    fontSize: '0.84rem',
                     outline: 'none',
-                    resize: 'none',
                   }}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="btn btn-secondary"
+                  className="btn btn-secondary btn-sm"
                   disabled={actionLoading}
                 >
                   Annuler
@@ -1000,7 +889,7 @@ export const CreancesPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   style={{ backgroundColor: primaryColor, borderColor: primaryColor }}
                 >
                   {actionLoading ? 'Enregistrement...' : 'Créer la créance'}
@@ -1036,89 +925,55 @@ export const CreancesPage: React.FC = () => {
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-xl)',
+              borderRadius: 'var(--radius-lg)',
               width: '100%',
-              maxWidth: '440px',
-              padding: '1.5rem',
+              maxWidth: '420px',
+              padding: '1.25rem',
               boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h4 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <h4 style={{ color: 'white', margin: 0, fontSize: '1rem', fontWeight: 800 }}>
                 Nouveau client rapide
               </h4>
-              <button
-                type="button"
-                onClick={() => setIsFastClientModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >
-                <X size={18} />
+              <button type="button" onClick={() => setIsFastClientModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateFastClient} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <form onSubmit={handleCreateFastClient} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary)', marginBottom: '0.3rem', fontWeight: 600 }}>
-                  Nom complet / Raison sociale *
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
+                  Nom complet *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Mme Koné Aïssata"
+                  placeholder="Mme Koné Aïssata"
                   value={fastClientForm.nom}
                   onChange={e => setFastClientForm({ ...fastClientForm, nom: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.8rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'white',
-                    fontSize: '0.85rem',
-                    outline: 'none',
-                  }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.84rem', outline: 'none' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-secondary)', marginBottom: '0.3rem', fontWeight: 600 }}>
-                  Téléphone (WhatsApp / SMS) *
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
+                  Téléphone (WhatsApp) *
                 </label>
                 <input
                   type="tel"
                   required
-                  placeholder="Ex: +225 07 11 22 33"
+                  placeholder="+225 07 11 22 33"
                   value={fastClientForm.telephone}
                   onChange={e => setFastClientForm({ ...fastClientForm, telephone: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.8rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'white',
-                    fontSize: '0.85rem',
-                    outline: 'none',
-                  }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.84rem', outline: 'none' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsFastClientModalOpen(false)}
-                  className="btn btn-secondary btn-sm"
-                  disabled={actionLoading}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="btn btn-primary btn-sm"
-                  style={{ backgroundColor: primaryColor, borderColor: primaryColor }}
-                >
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.35rem' }}>
+                <button type="button" onClick={() => setIsFastClientModalOpen(false)} className="btn btn-secondary btn-sm">Annuler</button>
+                <button type="submit" disabled={actionLoading} className="btn btn-primary btn-sm" style={{ backgroundColor: primaryColor, borderColor: primaryColor }}>
                   {actionLoading ? 'Création...' : 'Créer et sélectionner'}
                 </button>
               </div>
@@ -1128,7 +983,7 @@ export const CreancesPage: React.FC = () => {
       )}
 
       {/* ==================================================== */}
-      {/* MODAL 3 : FICHE CRÉANCE & ENCAISSEMENT */}
+      {/* MODAL 3 : FICHE CRÉANCE COMPACTE (LEVEL 1 DIRECT) */}
       {/* ==================================================== */}
       {isDetailModalOpen && (
         <div
@@ -1139,7 +994,7 @@ export const CreancesPage: React.FC = () => {
             right: 0,
             bottom: 0,
             background: 'rgba(5, 7, 13, 0.85)',
-            backdropFilter: 'blur(12px)',
+            backdropFilter: 'blur(10px)',
             zIndex: 100,
             display: 'flex',
             alignItems: 'center',
@@ -1152,144 +1007,108 @@ export const CreancesPage: React.FC = () => {
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-xl)',
+              borderRadius: 'var(--radius-lg)',
               width: '100%',
-              maxWidth: '750px',
+              maxWidth: '680px',
               maxHeight: '90vh',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 25px 50px rgba(0,0,0,0.6)',
+              boxShadow: '0 20px 45px rgba(0,0,0,0.6)',
               overflow: 'hidden',
             }}
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '12px',
-                    backgroundColor: `${primaryColor}22`,
-                    color: primaryColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                  }}
-                >
-                  <FileText size={22} />
+            <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: `${primaryColor}22`, color: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText size={18} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <h3 style={{ color: 'white', margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>
-                      Créance #{selectedCreanceDetail?.creance.id}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <h3 style={{ color: 'white', margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
+                      {selectedCreanceDetail?.creance.client_nom}
                     </h3>
                     {selectedCreanceDetail && getStatusBadge(selectedCreanceDetail.creance.statut)}
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                    Client : <strong style={{ color: 'white' }}>{selectedCreanceDetail?.creance.client_nom}</strong> • {selectedCreanceDetail?.creance.motif}
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Motif : {selectedCreanceDetail?.creance.motif} • Échéance : <strong>{selectedCreanceDetail?.creance.date_echeance}</strong>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 {selectedCreanceDetail && selectedCreanceDetail.creance.solde > 0 && (
                   <button
                     type="button"
                     onClick={() => handleOpenPayment(selectedCreanceDetail.creance)}
                     className="btn btn-primary btn-sm"
-                    style={{ backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    style={{ backgroundColor: primaryColor, borderColor: primaryColor, fontSize: '0.76rem', padding: '0.35rem 0.65rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                   >
-                    <CreditCard size={14} />
+                    <CreditCard size={13} />
                     <span>Encaisser</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setIsDetailModalOpen(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '0.3rem' }}
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ padding: '1.15rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {detailLoading || !selectedCreanceDetail ? (
-                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                  <Sparkles className="animate-spin" size={28} color={primaryColor} style={{ margin: '0 auto 1rem auto' }} />
-                  <div>Chargement des données de la créance...</div>
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.5rem auto' }} />
+                  <div>Chargement des détails...</div>
                 </div>
               ) : (
                 <>
-                  {/* Financial Overview Cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                    <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Montant Total</div>
-                      <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'white', marginTop: '0.2rem' }}>
+                  {/* Level 1: Financial Overview Direct Strip */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
+                    <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Montant Total</div>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', marginTop: '0.15rem' }}>
                         {selectedCreanceDetail.creance.montant_total.toLocaleString('fr-FR')} F
                       </div>
                     </div>
 
-                    <div style={{ background: 'var(--bg-main)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.72rem', color: '#34d399' }}>Déjà Payé</div>
-                      <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#34d399', marginTop: '0.2rem' }}>
+                    <div style={{ background: 'var(--bg-main)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#34d399' }}>Déjà Encaissé</div>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#34d399', marginTop: '0.15rem' }}>
                         {selectedCreanceDetail.creance.montant_paye.toLocaleString('fr-FR')} F
                       </div>
                     </div>
 
-                    <div style={{ background: 'var(--bg-main)', border: selectedCreanceDetail.creance.solde > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.72rem', color: selectedCreanceDetail.creance.solde > 0 ? '#f87171' : 'var(--text-muted)' }}>
+                    <div style={{ background: 'var(--bg-main)', border: selectedCreanceDetail.creance.solde > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.7rem', color: selectedCreanceDetail.creance.solde > 0 ? '#f87171' : 'var(--text-muted)' }}>
                         Solde Restant
                       </div>
-                      <div style={{ fontSize: '1.35rem', fontWeight: 800, color: selectedCreanceDetail.creance.solde > 0 ? '#f87171' : 'white', marginTop: '0.2rem' }}>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedCreanceDetail.creance.solde > 0 ? '#f87171' : 'white', marginTop: '0.15rem' }}>
                         {selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} F
                       </div>
                     </div>
                   </div>
 
-                  {/* Details Description */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
-                    <div>
-                      <strong style={{ color: 'white' }}>Description : </strong>
-                      <span style={{ color: 'var(--text-secondary)' }}>{selectedCreanceDetail.creance.description || 'Aucune description'}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      <div>Date émission : {selectedCreanceDetail.creance.date_creation}</div>
-                      <div>Date d'échéance : <strong style={{ color: selectedCreanceDetail.creance.statut === 'en_retard' ? '#f87171' : 'white' }}>{selectedCreanceDetail.creance.date_echeance}</strong></div>
-                      {selectedCreanceDetail.client?.telephone && <div>Téléphone : {selectedCreanceDetail.client.telephone}</div>}
-                    </div>
-                  </div>
-
                   {/* Paiements Enregistrés */}
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                      <h4 style={{ color: 'white', margin: 0, fontSize: '0.92rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <CreditCard size={16} color="#34d399" />
-                        <span>Règlements reçus ({selectedCreanceDetail.paiements.length})</span>
-                      </h4>
-
-                      {selectedCreanceDetail.creance.solde > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenPayment(selectedCreanceDetail.creance)}
-                          className="btn btn-primary btn-sm"
-                          style={{ backgroundColor: primaryColor, borderColor: primaryColor, fontSize: '0.72rem', padding: '0.3rem 0.6rem' }}
-                        >
-                          + Enregistrer un versement
-                        </button>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <CreditCard size={15} color="#34d399" />
+                        <span>Versements enregistrés ({selectedCreanceDetail.paiements.length})</span>
+                      </span>
                     </div>
 
                     {selectedCreanceDetail.paiements.length === 0 ? (
-                      <div style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)' }}>
-                        Aucun paiement partiel ou total n'a encore été enregistré.
+                      <div style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)' }}>
+                        Aucun paiement partiel ou total pour cette créance.
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         {selectedCreanceDetail.paiements.map(p => (
                           <div
                             key={p.id}
@@ -1297,20 +1116,18 @@ export const CreancesPage: React.FC = () => {
                               background: 'rgba(255,255,255,0.02)',
                               border: '1px solid var(--border-subtle)',
                               borderRadius: 'var(--radius-sm)',
-                              padding: '0.65rem 0.85rem',
+                              padding: '0.5rem 0.75rem',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              fontSize: '0.8rem',
+                              fontSize: '0.78rem',
                             }}
                           >
                             <div>
-                              <span style={{ fontWeight: 600, color: 'white' }}>{p.reference}</span>
-                              <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>({p.moyen_paiement})</span>
-                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.date_paiement} • {p.notes}</div>
+                              <strong style={{ color: 'white' }}>{p.reference}</strong> ({p.moyen_paiement}) • {p.date_paiement}
                             </div>
                             <div style={{ fontWeight: 800, color: '#34d399' }}>
-                              +{p.montant.toLocaleString('fr-FR')} FCFA
+                              +{p.montant.toLocaleString('fr-FR')} F
                             </div>
                           </div>
                         ))}
@@ -1318,136 +1135,62 @@ export const CreancesPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* ==================================================== */}
-                  {/* PRÉPARATION DE LA SUITE 1 : LIEN DE PAIEMENT PUBLIC */}
-                  {/* ==================================================== */}
+                  {/* Section Lien de Paiement Public (Compact) */}
                   <div
                     style={{
-                      background: `linear-gradient(135deg, ${primaryColor}12 0%, rgba(15, 23, 42, 0.7) 100%)`,
-                      border: `1px solid ${primaryColor}35`,
-                      borderRadius: 'var(--radius-lg)',
-                      padding: '1.25rem',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.85rem',
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.65rem',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>
-                        <ExternalLink size={16} color={primaryColor} />
-                        <span>Aperçu du futur Lien de Paiement Personnalisé</span>
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'white', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <ExternalLink size={14} color={primaryColor} />
+                        <span>Lien de Paiement en ligne</span>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCopyPaymentLink(selectedCreanceDetail.paymentLinkPreview.paymentUrl)}
-                        className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                      >
-                        <Copy size={12} />
-                        <span>{copiedLink ? 'Copié !' : 'Copier le lien'}</span>
-                      </button>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        Permettra le règlement par Mobile Money / Carte
+                      </div>
                     </div>
 
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0 }}>
-                      Ce lien sécurisé permettra au client <strong>{selectedCreanceDetail.paymentLinkPreview.clientName}</strong> de régler ses <strong>{selectedCreanceDetail.paymentLinkPreview.balance.toLocaleString('fr-FR')} FCFA</strong> restants via Mobile Money ou Carte bancaire dans la prochaine étape.
-                    </p>
-
-                    {/* Simulation de la carte de paiement personnalisée */}
-                    <div
-                      style={{
-                        background: 'rgba(11, 15, 25, 0.85)',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '1rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '1rem',
-                      }}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPaymentLink(selectedCreanceDetail.paymentLinkPreview.paymentUrl)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '8px',
-                            backgroundColor: selectedCreanceDetail.paymentLinkPreview.primaryColor,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {selectedCreanceDetail.paymentLinkPreview.companyLogo ? (
-                            <img src={selectedCreanceDetail.paymentLinkPreview.companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                          ) : (
-                            <Building2 size={16} color="white" />
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 800, color: 'white', fontSize: '0.88rem' }}>
-                            {selectedCreanceDetail.paymentLinkPreview.companyName}
-                          </div>
-                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                            Motif : {selectedCreanceDetail.paymentLinkPreview.motif}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Montant à régler</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399' }}>
-                          {selectedCreanceDetail.paymentLinkPreview.balance.toLocaleString('fr-FR')} FCFA
-                        </div>
-                      </div>
-                    </div>
+                      <Copy size={12} />
+                      <span>{copiedLink ? 'Lien copié !' : 'Copier le lien'}</span>
+                    </button>
                   </div>
 
-                  {/* ==================================================== */}
-                  {/* PRÉPARATION DE LA SUITE 2 : RELANCES WHATSAPP / SMS */}
-                  {/* ==================================================== */}
-                  <div
-                    style={{
-                      background: 'rgba(34, 197, 94, 0.08)',
-                      border: '1px solid rgba(34, 197, 94, 0.25)',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: '1.25rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#4ade80', fontWeight: 700, fontSize: '0.9rem' }}>
-                        <Send size={16} />
-                        <span>Relance Client Directe</span>
-                      </div>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        Canal : WhatsApp & SMS
+                  {/* Relance WhatsApp Directe */}
+                  {selectedCreanceDetail.creance.client_telephone && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(34, 197, 94, 0.06)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                        Relance rapide pour <strong>{selectedCreanceDetail.creance.client_nom}</strong>
                       </span>
-                    </div>
 
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0 }}>
-                      Envoyez immédiatement un message de relance professionnel et personnalisé à <strong>{selectedCreanceDetail.creance.client_nom}</strong> ({selectedCreanceDetail.creance.client_telephone}).
-                    </p>
-
-                    {selectedCreanceDetail.creance.client_telephone && (
                       <a
                         href={`https://wa.me/${selectedCreanceDetail.creance.client_telephone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                          `Bonjour ${selectedCreanceDetail.creance.client_nom}, l'entreprise ${company?.nom} vous informe que votre créance concernant "${selectedCreanceDetail.creance.motif}" s'élève à ${selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} FCFA avec une échéance fixée au ${selectedCreanceDetail.creance.date_echeance}. Merci de procéder au règlement.`
+                          `Bonjour ${selectedCreanceDetail.creance.client_nom}, ${company?.nom} vous informe que votre créance concernant "${selectedCreanceDetail.creance.motif}" s'élève à ${selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} FCFA avec une échéance fixée au ${selectedCreanceDetail.creance.date_echeance}. Merci de procéder au règlement.`
                         )}`}
                         target="_blank"
                         rel="noreferrer"
                         className="btn btn-secondary btn-sm"
-                        style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', color: '#4ade80', borderColor: 'rgba(34, 197, 94, 0.4)' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none', color: '#22c55e', fontSize: '0.74rem', padding: '0.3rem 0.6rem' }}
                       >
-                        <Send size={13} />
-                        <span>Envoyer la relance via WhatsApp</span>
+                        <Send size={12} />
+                        <span>WhatsApp</span>
                       </a>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -1456,7 +1199,7 @@ export const CreancesPage: React.FC = () => {
       )}
 
       {/* ==================================================== */}
-      {/* MODAL 4 : ENREGISTREMENT D'UN PAIEMENT PARTIEL OU TOTAL */}
+      {/* MODAL 4 : ENCAISSER UN PAIEMENT (COMPACT) */}
       {/* ==================================================== */}
       {isPaymentModalOpen && selectedCreanceDetail && (
         <div
@@ -1480,50 +1223,40 @@ export const CreancesPage: React.FC = () => {
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-xl)',
+              borderRadius: 'var(--radius-lg)',
               width: '100%',
-              maxWidth: '480px',
-              padding: '1.75rem',
+              maxWidth: '440px',
+              padding: '1.25rem',
               boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CreditCard size={18} />
-                </div>
-                <div>
-                  <h3 style={{ color: 'white', margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>
-                    Encaisser un paiement
-                  </h3>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                    Solde restant dû : <strong style={{ color: '#f87171' }}>{selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} FCFA</strong>
-                  </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div>
+                <h3 style={{ color: 'white', margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
+                  Encaisser un paiement
+                </h3>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Solde dû : <strong style={{ color: '#f87171' }}>{selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} FCFA</strong>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsPaymentModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >
-                <X size={18} />
+              <button type="button" onClick={() => setIsPaymentModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleRecordPayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Montant versé */}
+            <form onSubmit={handleRecordPayment} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                     Montant encaissé (FCFA) *
                   </label>
                   <button
                     type="button"
                     onClick={() => setPaymentForm({ ...paymentForm, montant: String(selectedCreanceDetail.creance.solde) })}
-                    style={{ background: 'none', border: 'none', color: primaryColor, fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: primaryColor, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    Régler tout le solde ({selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} F)
+                    Tout solder ({selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} F)
                   </button>
                 </div>
                 <input
@@ -1534,53 +1267,33 @@ export const CreancesPage: React.FC = () => {
                   placeholder="Ex: 50000"
                   value={paymentForm.montant}
                   onChange={e => setPaymentForm({ ...paymentForm, montant: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.7rem 0.9rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'white',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                  }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.88rem', outline: 'none' }}
                 />
               </div>
 
-              {/* Moyen de paiement */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                  Moyen de paiement *
-                </label>
-                <select
-                  value={paymentForm.moyen_paiement}
-                  onChange={e => setPaymentForm({ ...paymentForm, moyen_paiement: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.7rem 0.9rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--bg-main)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'white',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="especes">Espèces / Guichet</option>
-                  <option value="wave">Wave</option>
-                  <option value="om">Orange Money</option>
-                  <option value="momo">MTN MoMo</option>
-                  <option value="virement">Virement bancaire</option>
-                  <option value="cheque">Chèque</option>
-                  <option value="carte">Carte bancaire</option>
-                  <option value="autre">Autre moyen</option>
-                </select>
-              </div>
-
-              {/* Date & Référence */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
+                    Moyen de règlement *
+                  </label>
+                  <select
+                    value={paymentForm.moyen_paiement}
+                    onChange={e => setPaymentForm({ ...paymentForm, moyen_paiement: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-main)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.82rem', outline: 'none' }}
+                  >
+                    <option value="especes">Espèces / Caisse</option>
+                    <option value="wave">Wave</option>
+                    <option value="om">Orange Money</option>
+                    <option value="momo">MTN MoMo</option>
+                    <option value="virement">Virement bancaire</option>
+                    <option value="cheque">Chèque</option>
+                    <option value="carte">Carte bancaire</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
                     Date de règlement
                   </label>
                   <input
@@ -1588,80 +1301,27 @@ export const CreancesPage: React.FC = () => {
                     required
                     value={paymentForm.date_paiement}
                     onChange={e => setPaymentForm({ ...paymentForm, date_paiement: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.65rem 0.8rem',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'white',
-                      fontSize: '0.85rem',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                    N° Référence / Reçu
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentForm.reference}
-                    onChange={e => setPaymentForm({ ...paymentForm, reference: e.target.value })}
-                    placeholder="ENC-12345"
-                    style={{
-                      width: '100%',
-                      padding: '0.65rem 0.8rem',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'white',
-                      fontSize: '0.85rem',
-                      outline: 'none',
-                    }}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.82rem', outline: 'none' }}
                   />
                 </div>
               </div>
 
-              {/* Notes */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                  Notes sur l'encaissement
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
+                  Référence / Note
                 </label>
                 <input
                   type="text"
-                  value={paymentForm.notes}
-                  onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                  placeholder="Remise en main propre, acompte, etc."
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.8rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'white',
-                    fontSize: '0.85rem',
-                    outline: 'none',
-                  }}
+                  value={paymentForm.reference}
+                  onChange={e => setPaymentForm({ ...paymentForm, reference: e.target.value })}
+                  placeholder="ENC-12345"
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.82rem', outline: 'none' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsPaymentModalOpen(false)}
-                  className="btn btn-secondary"
-                  disabled={actionLoading}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="btn btn-primary"
-                  style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
-                >
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.35rem' }}>
+                <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="btn btn-secondary btn-sm">Annuler</button>
+                <button type="submit" disabled={actionLoading} className="btn btn-primary btn-sm" style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}>
                   {actionLoading ? 'Validation...' : 'Confirmer l\'encaissement'}
                 </button>
               </div>

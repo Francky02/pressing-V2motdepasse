@@ -18,35 +18,35 @@ export const PlaceholderModule: React.FC<PlaceholderProps> = ({
   const primaryColor = company?.couleur_principale || '#10b981';
 
   return (
-    <div style={{ maxWidth: '900px', margin: '2rem auto', textAlign: 'center' }}>
+    <div style={{ maxWidth: '900px', margin: '1rem auto', textAlign: 'center' }}>
       <div
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-xl)',
-          padding: '3.5rem 2rem',
+          padding: '2rem 1.5rem',
           boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
         }}
       >
         <div
           style={{
-            fontSize: '3rem',
-            marginBottom: '1rem',
+            fontSize: '2.5rem',
+            marginBottom: '0.75rem',
           }}
         >
           {moduleIcon}
         </div>
 
-        <div className="badge-pill" style={{ marginBottom: '1rem' }}>
-          <Construction size={14} />
-          <span>Module en préparation pour la prochaine étape</span>
+        <div className="badge-pill" style={{ marginBottom: '0.75rem', padding: '0.2rem 0.65rem', fontSize: '0.75rem' }}>
+          <Construction size={13} />
+          <span>Module en préparation</span>
         </div>
 
-        <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '0.75rem' }}>
+        <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem' }}>
           Module {moduleName}
         </h2>
 
-        <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', maxWidth: '560px', margin: '0 auto 1.75rem auto', lineHeight: 1.6 }}>
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: '520px', margin: '0 auto 1.25rem auto', lineHeight: 1.5 }}>
           {moduleDescription}
         </p>
 
