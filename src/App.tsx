@@ -1,107 +1,91 @@
-import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { CompanyCustomizerProvider } from './context/CompanyCustomizerContext';
-import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { ProblemSection } from './components/ProblemSection';
-import { SolutionSection } from './components/SolutionSection';
-import { MultiSectorSection } from './components/MultiSectorSection';
-import { CustomizationStudio } from './components/CustomizationStudio';
-import { HowItWorksSection } from './components/HowItWorksSection';
-import { BusinessModelSection } from './components/BusinessModelSection';
-import { DashboardMockupSection } from './components/DashboardMockupSection';
-import { TestimonialsFAQ } from './components/TestimonialsFAQ';
-import { CTASection } from './components/CTASection';
-import { Footer } from './components/Footer';
-import { OnboardingModal } from './components/OnboardingModal';
-import { LoginModal } from './components/LoginModal';
 
-function RelancioApp() {
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+// Pages
+import { LandingPage } from './pages/LandingPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { LoginPage } from './pages/LoginPage';
+import { AdminPage } from './pages/AdminPage';
 
-  const scrollToCustomizer = () => {
-    const el = document.getElementById('personnalisation');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  return (
-    <div className="relancio-app-root">
-      {/* Sticky Header */}
-      <Navbar
-        onOpenOnboarding={() => setIsOnboardingOpen(true)}
-        onOpenLogin={() => setIsLoginOpen(true)}
-      />
-
-      {/* Main Content Sections */}
-      <main>
-        {/* 1. Hero Section */}
-        <Hero
-          onOpenOnboarding={() => setIsOnboardingOpen(true)}
-          onExploreDemo={scrollToCustomizer}
-        />
-
-        {/* 2. Problem Section */}
-        <ProblemSection />
-
-        {/* 3. Solution Section */}
-        <SolutionSection />
-
-        {/* 4. Multi-Sectors Section */}
-        <MultiSectorSection />
-
-        {/* 5. Customization Studio (Votre entreprise. Votre identité.) */}
-        <CustomizationStudio />
-
-        {/* 6. How It Works Timeline */}
-        <HowItWorksSection />
-
-        {/* 7. Economic Model (Pas d'abonnement obligatoire) */}
-        <BusinessModelSection
-          onOpenOnboarding={() => setIsOnboardingOpen(true)}
-        />
-
-        {/* 8. Dashboard Mockup */}
-        <DashboardMockupSection />
-
-        {/* 9. FAQ */}
-        <TestimonialsFAQ />
-
-        {/* 10. Final Call to Action */}
-        <CTASection
-          onOpenOnboarding={() => setIsOnboardingOpen(true)}
-        />
-      </main>
-
-      {/* Footer */}
-      <Footer />
-
-      {/* Modals */}
-      <OnboardingModal
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-      />
-
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onSuccess={() => {
-          const dash = document.getElementById('dashboard');
-          if (dash) dash.scrollIntoView({ behavior: 'smooth' });
-        }}
-      />
-    </div>
-  );
-}
+// Entreprise Portal Pages
+import { EntrepriseLayout } from './pages/entreprise/EntrepriseLayout';
+import { EntrepriseDashboard } from './pages/entreprise/EntrepriseDashboard';
+import { EntrepriseSettings } from './pages/entreprise/EntrepriseSettings';
+import { PlaceholderModule } from './pages/entreprise/PlaceholderModule';
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <CompanyCustomizerProvider>
-        <RelancioApp />
-      </CompanyCustomizerProvider>
-    </LanguageProvider>
+    <BrowserRouter>
+      <LanguageProvider>
+        <AuthProvider>
+          <CompanyCustomizerProvider>
+            <Routes>
+              {/* 1. Page d'accueil VALIDÉE et INCHANGÉE */}
+              <Route path="/" element={<LandingPage />} />
+
+              {/* 2. Inscription Entreprise */}
+              <Route path="/inscription" element={<RegisterPage />} />
+
+              {/* 3. Connexion Entreprise */}
+              <Route path="/connexion" element={<LoginPage />} />
+
+              {/* 4. Super Admin (Connexion & Dashboard) */}
+              <Route path="/admin" element={<AdminPage />} />
+
+              {/* 5. Espace Entreprise (Tenant Isolé) */}
+              <Route path="/entreprise" element={<EntrepriseLayout />}>
+                <Route index element={<EntrepriseDashboard />} />
+                <Route path="parametres" element={<EntrepriseSettings />} />
+                <Route
+                  path="clients"
+                  element={
+                    <PlaceholderModule
+                      moduleName="Clients"
+                      moduleIcon="👥"
+                      moduleDescription="Gérez votre répertoire de clients, leurs coordonnées WhatsApp et leur historique de règlement."
+                    />
+                  }
+                />
+                <Route
+                  path="creances"
+                  element={
+                    <PlaceholderModule
+                      moduleName="Créances"
+                      moduleIcon="📄"
+                      moduleDescription="Enregistrez vos factures impayées, montants dus et motifs de prestations."
+                    />
+                  }
+                />
+                <Route
+                  path="paiements"
+                  element={
+                    <PlaceholderModule
+                      moduleName="Paiements"
+                      moduleIcon="💳"
+                      moduleDescription="Suivez les encaissements confirmés et les fonds crédités dans votre caisse."
+                    />
+                  }
+                />
+                <Route
+                  path="relances"
+                  element={
+                    <PlaceholderModule
+                      moduleName="Relances"
+                      moduleIcon="🔔"
+                      moduleDescription="Paramétrez vos messages de relance automatiques par WhatsApp et SMS."
+                    />
+                  }
+                />
+              </Route>
+
+              {/* Redirection fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </CompanyCustomizerProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </BrowserRouter>
   );
 }

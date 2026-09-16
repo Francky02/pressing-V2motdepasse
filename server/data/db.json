@@ -1,0 +1,281 @@
+{
+  "users": [
+    {
+      "id": "user-super-admin",
+      "entreprise_id": null,
+      "nom": "Super Administrateur Relancio",
+      "email": "admin@relancio.com",
+      "telephone": "+225 00 00 00 00",
+      "password_hash": "$2b$10$xC6Txu2ngcLXbmaLGv3YbuEYLwhXiesWXSYFG5njiFD4KHyRYemh.",
+      "role": "SUPER_ADMIN",
+      "actif": true,
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "updated_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "user-royal-clean",
+      "entreprise_id": "ent-royal-clean",
+      "nom": "Kouassi Jean-Marc",
+      "email": "royalclean@example.com",
+      "telephone": "+225 07 88 99 12",
+      "password_hash": "$2b$10$xC6Txu2ngcLXbmaLGv3Ybu55ZMDPT57ki8m69jOI/xrMJkeX0S5Ry",
+      "role": "ENTREPRISE_ADMIN",
+      "actif": true,
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "updated_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "user-etoiles-ecole",
+      "entreprise_id": "ent-etoiles-ecole",
+      "nom": "Fatou Diallo",
+      "email": "etoiles@example.com",
+      "telephone": "+221 33 824 55 66",
+      "password_hash": "$2b$10$xC6Txu2ngcLXbmaLGv3Ybu55ZMDPT57ki8m69jOI/xrMJkeX0S5Ry",
+      "role": "ENTREPRISE_ADMIN",
+      "actif": true,
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "updated_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "usr-1789518655278-hx8p",
+      "entreprise_id": "ent-1789518655278-vccf",
+      "nom": "Mamadou Touré",
+      "email": "test.garage.1789518655145@example.com",
+      "telephone": "+225 07 12 34 56",
+      "password_hash": "$2b$10$6iZ9f2bca7bqhGoiJGL2luBDJ.tLgdSUo634sD2T.ASNiXR6eIbx.",
+      "role": "ENTREPRISE_ADMIN",
+      "actif": true,
+      "created_at": "2026-09-16T00:30:55.278Z",
+      "updated_at": "2026-09-16T00:30:55.278Z"
+    }
+  ],
+  "entreprises": [
+    {
+      "id": "ent-royal-clean",
+      "nom": "Pressing Royal Clean Premium",
+      "responsable": "Kouassi Jean-Marc",
+      "email": "royalclean@example.com",
+      "telephone": "+225 07 88 99 12",
+      "secteur": "Pressing",
+      "logo": null,
+      "couleur_principale": "#0ea5e9",
+      "couleur_secondaire": "#0369a1",
+      "adresse": "Abidjan Cocody Nouveau Local",
+      "actif": true,
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "updated_at": "2026-09-16T00:30:56.029Z"
+    },
+    {
+      "id": "ent-etoiles-ecole",
+      "nom": "Groupe Scolaire Les Étoiles",
+      "responsable": "Fatou Diallo",
+      "email": "etoiles@example.com",
+      "telephone": "+221 33 824 55 66",
+      "secteur": "École",
+      "logo": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><path d='M50 20 L80 35 L50 50 L20 35 Z' fill='white'/><path d='M30 45 L30 65 C30 72, 50 80, 50 80 C50 80, 70 72, 70 65 L70 45' stroke='white' stroke-width='6' fill='none'/></svg>",
+      "couleur_principale": "#10b981",
+      "couleur_secondaire": "#059669",
+      "adresse": "Dakar, Almadies",
+      "actif": true,
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "updated_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "ent-1789518655278-vccf",
+      "nom": "Garage Turbo Test",
+      "responsable": "Mamadou Touré",
+      "email": "test.garage.1789518655145@example.com",
+      "telephone": "+225 07 12 34 56",
+      "secteur": "Garage",
+      "logo": null,
+      "couleur_principale": "#10b981",
+      "couleur_secondaire": "#0ea5e9",
+      "adresse": "",
+      "actif": true,
+      "created_at": "2026-09-16T00:30:55.278Z",
+      "updated_at": "2026-09-16T00:30:56.325Z"
+    }
+  ],
+  "creances": [
+    {
+      "id": "cre-rc-01",
+      "entreprise_id": "ent-royal-clean",
+      "client_nom": "M. Kouamé Patrice",
+      "client_telephone": "+225 05 11 22 33",
+      "montant": 45000,
+      "motif": "Nettoyage 4 costumes 3 pièces + 6 chemises",
+      "statut": "relance",
+      "echeance": "2026-09-20",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "cre-rc-02",
+      "entreprise_id": "ent-royal-clean",
+      "client_nom": "Hôtel Ivoire Palace",
+      "client_telephone": "+225 07 99 88 77",
+      "montant": 280000,
+      "motif": "Lavage linge hôtelier de luxe lot #B4",
+      "statut": "en_attente",
+      "echeance": "2026-09-25",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "cre-rc-03",
+      "entreprise_id": "ent-royal-clean",
+      "client_nom": "Mme Bamba Awa",
+      "client_telephone": "+225 01 44 55 66",
+      "montant": 35000,
+      "motif": "Détachage robe de soirée en soie",
+      "statut": "paye",
+      "echeance": "2026-09-12",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "cre-ee-01",
+      "entreprise_id": "ent-etoiles-ecole",
+      "client_nom": "M. Sarr Amadou (Parent élève)",
+      "client_telephone": "+221 77 123 45 67",
+      "montant": 150000,
+      "motif": "Frais de scolarité Trimestre 2 - Classe 3ème B",
+      "statut": "relance",
+      "echeance": "2026-09-18",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "cre-ee-02",
+      "entreprise_id": "ent-etoiles-ecole",
+      "client_nom": "Mme Ndiaye Mariama",
+      "client_telephone": "+221 78 987 65 43",
+      "montant": 85000,
+      "motif": "Transport scolaire & cantine Septembre",
+      "statut": "en_attente",
+      "echeance": "2026-09-30",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "cre-ee-03",
+      "entreprise_id": "ent-etoiles-ecole",
+      "client_nom": "M. Kane Ousmane",
+      "client_telephone": "+221 70 555 44 33",
+      "montant": 150000,
+      "motif": "Frais de scolarité Trimestre 1 - Classe Terminale S",
+      "statut": "paye",
+      "echeance": "2026-09-05",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    }
+  ],
+  "activity_logs": [
+    {
+      "id": "act-15aj5au",
+      "entreprise_id": null,
+      "action": "Modification Statut Entreprise",
+      "details": "L'entreprise Garage Turbo Test a été activée par le Super Admin",
+      "created_at": "2026-09-16T00:30:56.327Z"
+    },
+    {
+      "id": "act-lujsbap",
+      "entreprise_id": null,
+      "action": "Modification Statut Entreprise",
+      "details": "L'entreprise Garage Turbo Test a été désactivée par le Super Admin",
+      "created_at": "2026-09-16T00:30:56.294Z"
+    },
+    {
+      "id": "act-dws0t3f",
+      "entreprise_id": null,
+      "action": "Connexion Super Admin",
+      "details": "Accès au portail admin par admin@relancio.com",
+      "created_at": "2026-09-16T00:30:56.256Z"
+    },
+    {
+      "id": "act-1pl6r98",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Suppression Logo",
+      "details": "Logo supprimé pour Pressing Royal Clean Premium",
+      "created_at": "2026-09-16T00:30:56.031Z"
+    },
+    {
+      "id": "act-esf795h",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Modification Profil",
+      "details": "Mise à jour des paramètres pour Pressing Royal Clean",
+      "created_at": "2026-09-16T00:30:56.017Z"
+    },
+    {
+      "id": "act-suqc7q2",
+      "entreprise_id": "ent-etoiles-ecole",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Fatou Diallo",
+      "created_at": "2026-09-16T00:30:55.978Z"
+    },
+    {
+      "id": "act-chkhqa0",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
+      "created_at": "2026-09-16T00:30:55.727Z"
+    },
+    {
+      "id": "act-t42pacj",
+      "entreprise_id": "ent-1789518655278-vccf",
+      "action": "Inscription Entreprise",
+      "details": "Création du compte pour Garage Turbo Test",
+      "created_at": "2026-09-16T00:30:55.490Z"
+    },
+    {
+      "id": "act-9jidj4x",
+      "entreprise_id": null,
+      "action": "Connexion Super Admin",
+      "details": "Accès au portail admin par admin@relancio.com",
+      "created_at": "2026-09-16T00:25:33.158Z"
+    },
+    {
+      "id": "act-lgn3d4o",
+      "entreprise_id": "ent-etoiles-ecole",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Fatou Diallo",
+      "created_at": "2026-09-16T00:25:12.621Z"
+    },
+    {
+      "id": "act-slqe7zl",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
+      "created_at": "2026-09-16T00:25:04.383Z"
+    },
+    {
+      "id": "act-k3l2bag",
+      "entreprise_id": null,
+      "action": "Connexion Super Admin",
+      "details": "Accès au portail admin par admin@relancio.com",
+      "created_at": "2026-09-16T00:24:57.084Z"
+    },
+    {
+      "id": "act-fc2vjlc",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
+      "created_at": "2026-09-16T00:24:50.444Z"
+    },
+    {
+      "id": "act-01",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Relance envoyée",
+      "details": "Relance WhatsApp automatique envoyée à M. Kouamé Patrice (45 000 FCFA)",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "act-02",
+      "entreprise_id": "ent-etoiles-ecole",
+      "action": "Paiement reçu",
+      "details": "Encaissement validé 150 000 FCFA pour M. Kane Ousmane",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    },
+    {
+      "id": "act-03",
+      "entreprise_id": null,
+      "action": "Création compte",
+      "details": "Plateforme Relancio initialisée avec succès",
+      "created_at": "2026-09-16T00:23:43.451Z"
+    }
+  ]
+}
