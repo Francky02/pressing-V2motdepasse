@@ -47,6 +47,18 @@
       "actif": true,
       "created_at": "2026-09-16T00:30:55.278Z",
       "updated_at": "2026-09-16T00:30:55.278Z"
+    },
+    {
+      "id": "usr-1789518909739-6jk9",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "nom": "franck kouassi",
+      "email": "kouassikokora01@gmail.com",
+      "telephone": "0787392776",
+      "password_hash": "$2b$10$4K/5zmy6d8APK/a4zoDeJeaUzjsID.W6c/naiLyKn00M7u7w24U0a",
+      "role": "ENTREPRISE_ADMIN",
+      "actif": true,
+      "created_at": "2026-09-16T00:35:09.739Z",
+      "updated_at": "2026-09-16T00:35:09.739Z"
     }
   ],
   "entreprises": [
@@ -94,6 +106,21 @@
       "actif": true,
       "created_at": "2026-09-16T00:30:55.278Z",
       "updated_at": "2026-09-16T00:30:56.325Z"
+    },
+    {
+      "id": "ent-1789518909739-s7z1",
+      "nom": "pressing canaan",
+      "responsable": "franck kouassi",
+      "email": "kouassikokora01@gmail.com",
+      "telephone": "0787392776",
+      "secteur": "Pressing",
+      "logo": null,
+      "couleur_principale": "#10b981",
+      "couleur_secondaire": "#0ea5e9",
+      "adresse": "",
+      "actif": true,
+      "created_at": "2026-09-16T00:35:09.739Z",
+      "updated_at": "2026-09-16T00:35:09.739Z"
     }
   ],
   "creances": [
@@ -165,6 +192,13 @@
     }
   ],
   "activity_logs": [
+    {
+      "id": "act-4hkh5xm",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "action": "Inscription Entreprise",
+      "details": "Création du compte pour pressing canaan",
+      "created_at": "2026-09-16T00:35:09.856Z"
+    },
     {
       "id": "act-15aj5au",
       "entreprise_id": null,
