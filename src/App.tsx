@@ -13,7 +13,10 @@ import { AdminPage } from './pages/AdminPage';
 import { EntrepriseLayout } from './pages/entreprise/EntrepriseLayout';
 import { EntrepriseDashboard } from './pages/entreprise/EntrepriseDashboard';
 import { EntrepriseSettings } from './pages/entreprise/EntrepriseSettings';
-import { PlaceholderModule } from './pages/entreprise/PlaceholderModule';
+import { ClientsPage } from './pages/entreprise/ClientsPage';
+import { CreancesPage } from './pages/entreprise/CreancesPage';
+import { PaiementsPage } from './pages/entreprise/PaiementsPage';
+import { RelancesPage } from './pages/entreprise/RelancesPage';
 
 export default function App() {
   return (
@@ -38,46 +41,10 @@ export default function App() {
               <Route path="/entreprise" element={<EntrepriseLayout />}>
                 <Route index element={<EntrepriseDashboard />} />
                 <Route path="parametres" element={<EntrepriseSettings />} />
-                <Route
-                  path="clients"
-                  element={
-                    <PlaceholderModule
-                      moduleName="Clients"
-                      moduleIcon="👥"
-                      moduleDescription="Gérez votre répertoire de clients, leurs coordonnées WhatsApp et leur historique de règlement."
-                    />
-                  }
-                />
-                <Route
-                  path="creances"
-                  element={
-                    <PlaceholderModule
-                      moduleName="Créances"
-                      moduleIcon="📄"
-                      moduleDescription="Enregistrez vos factures impayées, montants dus et motifs de prestations."
-                    />
-                  }
-                />
-                <Route
-                  path="paiements"
-                  element={
-                    <PlaceholderModule
-                      moduleName="Paiements"
-                      moduleIcon="💳"
-                      moduleDescription="Suivez les encaissements confirmés et les fonds crédités dans votre caisse."
-                    />
-                  }
-                />
-                <Route
-                  path="relances"
-                  element={
-                    <PlaceholderModule
-                      moduleName="Relances"
-                      moduleIcon="🔔"
-                      moduleDescription="Paramétrez vos messages de relance automatiques par WhatsApp et SMS."
-                    />
-                  }
-                />
+                <Route path="clients" element={<ClientsPage />} />
+                <Route path="creances" element={<CreancesPage />} />
+                <Route path="paiements" element={<PaiementsPage />} />
+                <Route path="relances" element={<RelancesPage />} />
               </Route>
 
               {/* Redirection fallback */}

@@ -28,6 +28,7 @@ app.get('/api/health', (_req, res) => {
 // Mount Routes
 app.use('/api/auth', authRouter);
 app.use('/api/company', companyRouter);
+app.use('/api/entreprise', companyRouter);
 app.use('/api/admin', adminRouter);
 
 // Global Error Handler

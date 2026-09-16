@@ -123,7 +123,193 @@
       "updated_at": "2026-09-16T00:35:09.739Z"
     }
   ],
+  "clients": [
+    {
+      "id": "cli-tjw6rqm",
+      "entreprise_id": "ent-royal-clean",
+      "type": "entreprise",
+      "nom": "Cabinet Dentaire Dr Touré",
+      "telephone": "+225 07 24295836",
+      "email": "contact@cabinet-toure.ci",
+      "adresse": "Abidjan Cocody II Plateaux Vallon",
+      "notes": "Blouses médicales avec livraison express",
+      "actif": true,
+      "created_at": "2026-09-16T18:07:35.663Z",
+      "updated_at": "2026-09-16T18:07:35.844Z"
+    },
+    {
+      "id": "cli-9hmtb1b",
+      "entreprise_id": "ent-royal-clean",
+      "type": "entreprise",
+      "nom": "Cabinet Dentaire Dr Touré",
+      "telephone": "+225 07 54083952",
+      "email": "contact@cabinet-toure.ci",
+      "adresse": "Abidjan Cocody II Plateaux Vallon",
+      "notes": "Blouses médicales avec livraison express",
+      "actif": true,
+      "created_at": "2026-09-16T17:52:30.188Z",
+      "updated_at": "2026-09-16T17:52:30.518Z"
+    },
+    {
+      "id": "cli-rc-01",
+      "entreprise_id": "ent-royal-clean",
+      "type": "particulier",
+      "nom": "M. Kouamé Patrice",
+      "telephone": "+225 05 11 22 33",
+      "email": "patrice.kouame@example.com",
+      "adresse": "Abidjan, Cocody Angré 8ème Tranche",
+      "notes": "Client fidèle pressing costume haute couture",
+      "actif": true,
+      "created_at": "2026-09-16T17:50:29.363Z",
+      "updated_at": "2026-09-16T17:50:29.363Z"
+    },
+    {
+      "id": "cli-rc-02",
+      "entreprise_id": "ent-royal-clean",
+      "type": "entreprise",
+      "nom": "Hôtel Ivoire Palace",
+      "telephone": "+225 07 99 88 77",
+      "email": "facturation@ivoirepalace.ci",
+      "adresse": "Abidjan, Plateau Boulevard de la République",
+      "notes": "Contrat hôtelier lot linge hebdomadaire",
+      "actif": true,
+      "created_at": "2026-09-16T17:50:29.363Z",
+      "updated_at": "2026-09-16T17:50:29.363Z"
+    },
+    {
+      "id": "cli-rc-03",
+      "entreprise_id": "ent-royal-clean",
+      "type": "particulier",
+      "nom": "Mme Bamba Awa",
+      "telephone": "+225 01 44 55 66",
+      "email": "awa.bamba@example.com",
+      "adresse": "Abidjan, Marcory Zone 4",
+      "notes": "Client robes de cérémonies",
+      "actif": true,
+      "created_at": "2026-09-16T17:50:29.363Z",
+      "updated_at": "2026-09-16T17:50:29.363Z"
+    },
+    {
+      "id": "cli-ee-01",
+      "entreprise_id": "ent-etoiles-ecole",
+      "type": "particulier",
+      "nom": "M. Sarr Amadou (Parent élève)",
+      "telephone": "+221 77 123 45 67",
+      "email": "amadou.sarr@example.sn",
+      "adresse": "Dakar, Liberté 6",
+      "notes": "Parent élève Sarr Ibrahima (Classe 3ème B)",
+      "actif": true,
+      "created_at": "2026-09-16T17:50:29.363Z",
+      "updated_at": "2026-09-16T17:50:29.363Z"
+    },
+    {
+      "id": "cli-ee-02",
+      "entreprise_id": "ent-etoiles-ecole",
+      "type": "particulier",
+      "nom": "Mme Ndiaye Mariama",
+      "telephone": "+221 78 987 65 43",
+      "email": "mariama.ndiaye@example.sn",
+      "adresse": "Dakar, Mermoz",
+      "notes": "Parent élève Ndiaye Fatou (Primaire CE2)",
+      "actif": true,
+      "created_at": "2026-09-16T17:50:29.363Z",
+      "updated_at": "2026-09-16T17:50:29.363Z"
+    },
+    {
+      "id": "cli-ee-03",
+      "entreprise_id": "ent-etoiles-ecole",
+      "type": "particulier",
+      "nom": "M. Kane Ousmane",
+      "telephone": "+221 70 555 44 33",
+      "email": "ousmane.kane@example.sn",
+      "adresse": "Dakar, Ouakam",
+      "notes": "Parent élève Kane Abdoulaye (Terminale S)",
+      "actif": true,
+      "created_at": "2026-09-16T17:50:29.363Z",
+      "updated_at": "2026-09-16T17:50:29.363Z"
+    }
+  ],
   "creances": [
+    {
+      "id": "cre-1a5mt04",
+      "entreprise_id": "ent-royal-clean",
+      "client_id": "cli-tjw6rqm",
+      "client_nom": "Cabinet Dentaire Dr Touré",
+      "client_telephone": "+225 07 24295836",
+      "motif": "Commande urgente gants et masques",
+      "description": "Fourniture matériel",
+      "montant_total": 45000,
+      "montant_paye": 0,
+      "solde": 45000,
+      "date_creation": "2026-09-16",
+      "date_echeance": "2026-08-01",
+      "statut": "en_retard",
+      "notes": "",
+      "montant": 45000,
+      "echeance": "2026-08-01",
+      "created_at": "2026-09-16T18:07:35.742Z",
+      "updated_at": "2026-09-16T18:07:35.742Z"
+    },
+    {
+      "id": "cre-sb1e84r",
+      "entreprise_id": "ent-royal-clean",
+      "client_id": "cli-tjw6rqm",
+      "client_nom": "Cabinet Dentaire Dr Touré",
+      "client_telephone": "+225 07 24295836",
+      "motif": "Nettoyage spécialisé 50 blouses médicales",
+      "description": "Traitement antibactérien haute température",
+      "montant_total": 100000,
+      "montant_paye": 100000,
+      "solde": 0,
+      "date_creation": "2026-09-16",
+      "date_echeance": "2026-09-23",
+      "statut": "payee",
+      "notes": "Règlement à la livraison",
+      "montant": 100000,
+      "echeance": "2026-09-23",
+      "created_at": "2026-09-16T18:07:35.701Z",
+      "updated_at": "2026-09-16T18:07:35.734Z"
+    },
+    {
+      "id": "cre-rtfwf1z",
+      "entreprise_id": "ent-royal-clean",
+      "client_id": "cli-9hmtb1b",
+      "client_nom": "Cabinet Dentaire Dr Touré",
+      "client_telephone": "+225 07 54083952",
+      "motif": "Commande urgente gants et masques",
+      "description": "Fourniture matériel",
+      "montant_total": 45000,
+      "montant_paye": 0,
+      "solde": 45000,
+      "date_creation": "2026-09-16",
+      "date_echeance": "2026-08-01",
+      "statut": "en_retard",
+      "notes": "",
+      "montant": 45000,
+      "echeance": "2026-08-01",
+      "created_at": "2026-09-16T17:52:30.419Z",
+      "updated_at": "2026-09-16T17:52:30.419Z"
+    },
+    {
+      "id": "cre-7bme8oh",
+      "entreprise_id": "ent-royal-clean",
+      "client_id": "cli-9hmtb1b",
+      "client_nom": "Cabinet Dentaire Dr Touré",
+      "client_telephone": "+225 07 54083952",
+      "motif": "Nettoyage spécialisé 50 blouses médicales",
+      "description": "Traitement antibactérien haute température",
+      "montant_total": 100000,
+      "montant_paye": 100000,
+      "solde": 0,
+      "date_creation": "2026-09-16",
+      "date_echeance": "2026-09-23",
+      "statut": "payee",
+      "notes": "Règlement à la livraison",
+      "montant": 100000,
+      "echeance": "2026-09-23",
+      "created_at": "2026-09-16T17:52:30.229Z",
+      "updated_at": "2026-09-16T17:52:30.380Z"
+    },
     {
       "id": "cre-rc-01",
       "entreprise_id": "ent-royal-clean",
@@ -131,9 +317,18 @@
       "client_telephone": "+225 05 11 22 33",
       "montant": 45000,
       "motif": "Nettoyage 4 costumes 3 pièces + 6 chemises",
-      "statut": "relance",
+      "statut": "en_attente",
       "echeance": "2026-09-20",
-      "created_at": "2026-09-16T00:23:43.451Z"
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "montant_total": 45000,
+      "montant_paye": 0,
+      "solde": 45000,
+      "date_creation": "2026-09-16T00:23:43.451Z",
+      "date_echeance": "2026-09-20",
+      "description": "Nettoyage 4 costumes 3 pièces + 6 chemises",
+      "notes": "",
+      "updated_at": "2026-09-16T00:23:43.451Z",
+      "client_id": "cli-rc-01"
     },
     {
       "id": "cre-rc-02",
@@ -144,7 +339,16 @@
       "motif": "Lavage linge hôtelier de luxe lot #B4",
       "statut": "en_attente",
       "echeance": "2026-09-25",
-      "created_at": "2026-09-16T00:23:43.451Z"
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "montant_total": 280000,
+      "montant_paye": 0,
+      "solde": 280000,
+      "date_creation": "2026-09-16T00:23:43.451Z",
+      "date_echeance": "2026-09-25",
+      "description": "Lavage linge hôtelier de luxe lot #B4",
+      "notes": "",
+      "updated_at": "2026-09-16T00:23:43.451Z",
+      "client_id": "cli-rc-02"
     },
     {
       "id": "cre-rc-03",
@@ -153,9 +357,18 @@
       "client_telephone": "+225 01 44 55 66",
       "montant": 35000,
       "motif": "Détachage robe de soirée en soie",
-      "statut": "paye",
+      "statut": "payee",
       "echeance": "2026-09-12",
-      "created_at": "2026-09-16T00:23:43.451Z"
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "montant_total": 35000,
+      "montant_paye": 35000,
+      "solde": 0,
+      "date_creation": "2026-09-16T00:23:43.451Z",
+      "date_echeance": "2026-09-12",
+      "description": "Détachage robe de soirée en soie",
+      "notes": "",
+      "updated_at": "2026-09-16T00:23:43.451Z",
+      "client_id": "cli-rc-03"
     },
     {
       "id": "cre-ee-01",
@@ -164,9 +377,18 @@
       "client_telephone": "+221 77 123 45 67",
       "montant": 150000,
       "motif": "Frais de scolarité Trimestre 2 - Classe 3ème B",
-      "statut": "relance",
+      "statut": "en_attente",
       "echeance": "2026-09-18",
-      "created_at": "2026-09-16T00:23:43.451Z"
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "montant_total": 150000,
+      "montant_paye": 0,
+      "solde": 150000,
+      "date_creation": "2026-09-16T00:23:43.451Z",
+      "date_echeance": "2026-09-18",
+      "description": "Frais de scolarité Trimestre 2 - Classe 3ème B",
+      "notes": "",
+      "updated_at": "2026-09-16T00:23:43.451Z",
+      "client_id": "cli-ee-01"
     },
     {
       "id": "cre-ee-02",
@@ -177,7 +399,16 @@
       "motif": "Transport scolaire & cantine Septembre",
       "statut": "en_attente",
       "echeance": "2026-09-30",
-      "created_at": "2026-09-16T00:23:43.451Z"
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "montant_total": 85000,
+      "montant_paye": 0,
+      "solde": 85000,
+      "date_creation": "2026-09-16T00:23:43.451Z",
+      "date_echeance": "2026-09-30",
+      "description": "Transport scolaire & cantine Septembre",
+      "notes": "",
+      "updated_at": "2026-09-16T00:23:43.451Z",
+      "client_id": "cli-ee-02"
     },
     {
       "id": "cre-ee-03",
@@ -186,12 +417,242 @@
       "client_telephone": "+221 70 555 44 33",
       "montant": 150000,
       "motif": "Frais de scolarité Trimestre 1 - Classe Terminale S",
-      "statut": "paye",
+      "statut": "payee",
       "echeance": "2026-09-05",
-      "created_at": "2026-09-16T00:23:43.451Z"
+      "created_at": "2026-09-16T00:23:43.451Z",
+      "montant_total": 150000,
+      "montant_paye": 150000,
+      "solde": 0,
+      "date_creation": "2026-09-16T00:23:43.451Z",
+      "date_echeance": "2026-09-05",
+      "description": "Frais de scolarité Trimestre 1 - Classe Terminale S",
+      "notes": "",
+      "updated_at": "2026-09-16T00:23:43.451Z",
+      "client_id": "cli-ee-03"
+    }
+  ],
+  "paiements": [
+    {
+      "id": "pay-jwkpmhq",
+      "entreprise_id": "ent-royal-clean",
+      "creance_id": "cre-sb1e84r",
+      "client_id": "cli-tjw6rqm",
+      "montant": 70000,
+      "date_paiement": "2026-09-16",
+      "moyen_paiement": "especes",
+      "reference": "ESP-MED-SOLDE",
+      "notes": "Solde complet réglé",
+      "created_at": "2026-09-16T18:07:35.734Z"
+    },
+    {
+      "id": "pay-hsl777l",
+      "entreprise_id": "ent-royal-clean",
+      "creance_id": "cre-sb1e84r",
+      "client_id": "cli-tjw6rqm",
+      "montant": 30000,
+      "date_paiement": "2026-09-16",
+      "moyen_paiement": "virement",
+      "reference": "VIR-MED-01",
+      "notes": "Premier acompte",
+      "created_at": "2026-09-16T18:07:35.725Z"
+    },
+    {
+      "id": "pay-656hjgr",
+      "entreprise_id": "ent-royal-clean",
+      "creance_id": "cre-7bme8oh",
+      "client_id": "cli-9hmtb1b",
+      "montant": 70000,
+      "date_paiement": "2026-09-16",
+      "moyen_paiement": "especes",
+      "reference": "ESP-MED-SOLDE",
+      "notes": "Solde complet réglé",
+      "created_at": "2026-09-16T17:52:30.380Z"
+    },
+    {
+      "id": "pay-yiiocd7",
+      "entreprise_id": "ent-royal-clean",
+      "creance_id": "cre-7bme8oh",
+      "client_id": "cli-9hmtb1b",
+      "montant": 30000,
+      "date_paiement": "2026-09-16",
+      "moyen_paiement": "virement",
+      "reference": "VIR-MED-01",
+      "notes": "Premier acompte",
+      "created_at": "2026-09-16T17:52:30.363Z"
+    },
+    {
+      "id": "pay-vbc6mo6",
+      "entreprise_id": "ent-royal-clean",
+      "creance_id": "cre-rc-03",
+      "client_id": "cli-rc-03",
+      "montant": 35000,
+      "date_paiement": "2026-09-12",
+      "moyen_paiement": "especes",
+      "reference": "ENC-GKHTU",
+      "notes": "Règlement initial enregistré",
+      "created_at": "2026-09-16T17:50:29.368Z"
+    },
+    {
+      "id": "pay-zqbbwqq",
+      "entreprise_id": "ent-etoiles-ecole",
+      "creance_id": "cre-ee-03",
+      "client_id": "cli-ee-03",
+      "montant": 150000,
+      "date_paiement": "2026-09-05",
+      "moyen_paiement": "especes",
+      "reference": "ENC-9GKSZ",
+      "notes": "Règlement initial enregistré",
+      "created_at": "2026-09-16T17:50:29.368Z"
     }
   ],
   "activity_logs": [
+    {
+      "id": "act-uf2oaa6",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Réactivation Client",
+      "details": "Le client Cabinet Dentaire Dr Touré a été réactivé",
+      "created_at": "2026-09-16T18:07:35.845Z"
+    },
+    {
+      "id": "act-2wl3xag",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Désactivation Client",
+      "details": "Le client Cabinet Dentaire Dr Touré a été archivé",
+      "created_at": "2026-09-16T18:07:35.761Z"
+    },
+    {
+      "id": "act-4ms1dy2",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Création Créance",
+      "details": "Créance de 45 000 FCFA créée pour Cabinet Dentaire Dr Touré (Motif: Commande urgente gants et masques)",
+      "created_at": "2026-09-16T18:07:35.744Z"
+    },
+    {
+      "id": "act-641f6n3",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Encaissement Reçu",
+      "details": "Paiement de 70 000 FCFA reçu pour la créance #cre-sb1e84r (Cabinet Dentaire Dr Touré)",
+      "created_at": "2026-09-16T18:07:35.735Z"
+    },
+    {
+      "id": "act-4547yua",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Encaissement Reçu",
+      "details": "Paiement de 30 000 FCFA reçu pour la créance #cre-sb1e84r (Cabinet Dentaire Dr Touré)",
+      "created_at": "2026-09-16T18:07:35.726Z"
+    },
+    {
+      "id": "act-m4vu5h5",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Création Créance",
+      "details": "Créance de 100 000 FCFA créée pour Cabinet Dentaire Dr Touré (Motif: Nettoyage spécialisé 50 blouses médicales)",
+      "created_at": "2026-09-16T18:07:35.703Z"
+    },
+    {
+      "id": "act-sf2kifv",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Modification Client",
+      "details": "Fiche mise à jour pour le client Cabinet Dentaire Dr Touré",
+      "created_at": "2026-09-16T18:07:35.681Z"
+    },
+    {
+      "id": "act-bur5dyx",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Nouveau Client",
+      "details": "Client créé : Cabinet Dentaire Dr Touré (+225 07 24295836)",
+      "created_at": "2026-09-16T18:07:35.665Z"
+    },
+    {
+      "id": "act-gbebwsm",
+      "entreprise_id": "ent-etoiles-ecole",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Fatou Diallo",
+      "created_at": "2026-09-16T18:07:35.653Z"
+    },
+    {
+      "id": "act-m4ukp9v",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
+      "created_at": "2026-09-16T18:07:35.525Z"
+    },
+    {
+      "id": "act-kh6b06x",
+      "entreprise_id": null,
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Super Administrateur Relancio",
+      "created_at": "2026-09-16T18:03:48.446Z"
+    },
+    {
+      "id": "act-kpcua3x",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Réactivation Client",
+      "details": "Le client Cabinet Dentaire Dr Touré a été réactivé",
+      "created_at": "2026-09-16T17:52:30.522Z"
+    },
+    {
+      "id": "act-9srpkar",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Désactivation Client",
+      "details": "Le client Cabinet Dentaire Dr Touré a été archivé",
+      "created_at": "2026-09-16T17:52:30.450Z"
+    },
+    {
+      "id": "act-1v4n33w",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Création Créance",
+      "details": "Créance de 45 000 FCFA créée pour Cabinet Dentaire Dr Touré (Motif: Commande urgente gants et masques)",
+      "created_at": "2026-09-16T17:52:30.421Z"
+    },
+    {
+      "id": "act-142jy45",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Encaissement Reçu",
+      "details": "Paiement de 70 000 FCFA reçu pour la créance #cre-7bme8oh (Cabinet Dentaire Dr Touré)",
+      "created_at": "2026-09-16T17:52:30.383Z"
+    },
+    {
+      "id": "act-yap3us3",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Encaissement Reçu",
+      "details": "Paiement de 30 000 FCFA reçu pour la créance #cre-7bme8oh (Cabinet Dentaire Dr Touré)",
+      "created_at": "2026-09-16T17:52:30.365Z"
+    },
+    {
+      "id": "act-c7b8nio",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Création Créance",
+      "details": "Créance de 100 000 FCFA créée pour Cabinet Dentaire Dr Touré (Motif: Nettoyage spécialisé 50 blouses médicales)",
+      "created_at": "2026-09-16T17:52:30.340Z"
+    },
+    {
+      "id": "act-4f9ntd6",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Modification Client",
+      "details": "Fiche mise à jour pour le client Cabinet Dentaire Dr Touré",
+      "created_at": "2026-09-16T17:52:30.203Z"
+    },
+    {
+      "id": "act-c8mol04",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Nouveau Client",
+      "details": "Client créé : Cabinet Dentaire Dr Touré (+225 07 54083952)",
+      "created_at": "2026-09-16T17:52:30.189Z"
+    },
+    {
+      "id": "act-l3hnsms",
+      "entreprise_id": "ent-etoiles-ecole",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Fatou Diallo",
+      "created_at": "2026-09-16T17:52:30.174Z"
+    },
+    {
+      "id": "act-g6635wr",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
+      "created_at": "2026-09-16T17:52:30.038Z"
+    },
     {
       "id": "act-4hkh5xm",
       "entreprise_id": "ent-1789518909739-s7z1",
