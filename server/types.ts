@@ -25,6 +25,8 @@ export interface Entreprise {
   couleur_secondaire: string;
   adresse: string;
   actif: boolean;
+  relance_auto_active?: boolean;
+  relance_auto_milestones?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -84,6 +86,49 @@ export interface Paiement {
   created_at: string;
 }
 
+export type DemandePaiementStatut = 'en_attente' | 'partiellement_payee' | 'payee' | 'expiree' | 'annulee';
+
+export interface DemandePaiement {
+  id: string;
+  entreprise_id: string;
+  creance_id: string;
+  client_id: string;
+  montant: number;
+  montant_paye?: number;
+  motif: string;
+  token: string;
+  date_creation: string;
+  date_expiration: string;
+  statut: DemandePaiementStatut;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RelanceType = 'manuel' | 'auto';
+export type RelanceMilestone = 'J-7' | 'J-3' | 'J0' | 'J+3' | 'J+7' | 'J+14' | 'J+30' | 'manuel';
+export type RelanceStatus = 'envoye' | 'echec' | 'annule';
+
+export interface RelanceLog {
+  id: string;
+  entreprise_id: string;
+  creance_id: string;
+  client_id: string;
+  client_nom: string;
+  client_telephone: string;
+  telephone_normalise: string;
+  type: RelanceType;
+  milestone: RelanceMilestone;
+  montant_solde: number;
+  montant_total: number;
+  statut: RelanceStatus;
+  motif_echec?: string;
+  message: string;
+  canal: 'whatsapp' | 'sms';
+  created_at: string;
+}
+
 export interface ActivityLog {
   id: string;
   entreprise_id: string | null;
@@ -98,5 +143,7 @@ export interface DatabaseSchema {
   clients: Client[];
   creances: Creance[];
   paiements: Paiement[];
+  demandes_paiement?: DemandePaiement[];
+  relances_logs?: RelanceLog[];
   activity_logs: ActivityLog[];
 }

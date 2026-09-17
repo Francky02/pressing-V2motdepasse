@@ -1,30 +1,200 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import { DatabaseSchema, User, Entreprise, Client, Creance, Paiement, ActivityLog, CreanceStatut } from './types.js';
+import {
+  DatabaseSchema,
+  User,
+  Entreprise,
+  Client,
+  Creance,
+  Paiement,
+  ActivityLog,
+  CreanceStatut,
+  DemandePaiement,
+  DemandePaiementStatut,
+  RelanceLog,
+  RelanceMilestone,
+  RelanceStatus,
+  RelanceType,
+} from './types.js';
 
 const DATA_DIR = path.resolve(process.cwd(), 'server', 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
+export const DEFAULT_RELANCE_MILESTONES: RelanceMilestone[] = ['J-7', 'J-3', 'J0', 'J+3', 'J+7', 'J+14', 'J+30'];
+
+/**
+ * Normalise un numéro de téléphone pour WhatsApp au format international (chiffres sans + ni espaces).
+ */
+export function normalizeWhatsAppPhone(phone: string | null | undefined, defaultCountryCode = '225'): {
+  normalized: string;
+  isValid: boolean;
+  error?: string;
+} {
+  if (!phone || !phone.trim()) {
+    return { normalized: '', isValid: false, error: 'Numéro de téléphone absent' };
+  }
+
+  let cleaned = phone.replace(/[^\d+]/g, '');
+
+  if (cleaned.startsWith('+')) {
+    cleaned = cleaned.substring(1);
+  } else if (cleaned.startsWith('00')) {
+    cleaned = cleaned.substring(2);
+  } else {
+    // Si commence par 0 et 10 chiffres (Côte d'Ivoire 01/05/07...), on préfixe 225
+    if (cleaned.startsWith('0') && cleaned.length === 10) {
+      cleaned = defaultCountryCode + cleaned;
+    } else if (cleaned.length <= 9) {
+      cleaned = defaultCountryCode + cleaned;
+    }
+  }
+
+  // Vérifier qu'il y a entre 8 et 15 chiffres
+  if (!/^\d{8,15}$/.test(cleaned)) {
+    return { normalized: cleaned, isValid: false, error: 'Format de numéro international invalide' };
+  }
+
+  return { normalized: cleaned, isValid: true };
+}
+
+/**
+ * Calcule l'échéance / milestone par rapport à une date de référence
+ */
+export function calculateMilestone(dateEcheanceStr: string, refDate: Date = new Date()): {
+  milestone: RelanceMilestone | null;
+  diffDays: number;
+} {
+  const echeance = parseDueDate(dateEcheanceStr);
+  if (!echeance) return { milestone: null, diffDays: 0 };
+
+  const refMidnight = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
+  const echMidnight = new Date(echeance.getFullYear(), echeance.getMonth(), echeance.getDate());
+
+  const diffTime = refMidnight.getTime() - echMidnight.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  let milestone: RelanceMilestone | null = null;
+  if (diffDays === -7) milestone = 'J-7';
+  else if (diffDays === -3) milestone = 'J-3';
+  else if (diffDays === 0) milestone = 'J0';
+  else if (diffDays === 3) milestone = 'J+3';
+  else if (diffDays === 7) milestone = 'J+7';
+  else if (diffDays === 14) milestone = 'J+14';
+  else if (diffDays === 30) milestone = 'J+30';
+
+  return { milestone, diffDays };
+}
+
+/**
+ * Génère le message WhatsApp personnalisé selon l'échéance et le solde restant
+ */
+export function generateRelanceMessage(
+  milestone: RelanceMilestone | 'manuel',
+  clientNom: string,
+  companyNom: string,
+  solde: number,
+  motif: string,
+  dateEcheance: string,
+  tone: 'amicale' | 'ferme' | 'mise_en_demeure' | 'preventif' | 'info' = 'amicale'
+): string {
+  const amount = solde.toLocaleString('fr-FR');
+
+  switch (milestone) {
+    case 'J-7':
+      return `Bonjour ${clientNom}, nous vous informons que votre facture pour "${motif}" d'un montant de ${amount} FCFA arrivera à échéance dans 7 jours (le ${dateEcheance}) auprès de ${companyNom}. Merci pour votre anticipation.`;
+    case 'J-3':
+      return `Bonjour ${clientNom}, rappel courtois : votre règlement de ${amount} FCFA concernant "${motif}" arrive à échéance le ${dateEcheance}. Merci de préparer votre paiement auprès de ${companyNom}.`;
+    case 'J0':
+      return `Bonjour ${clientNom}, votre facture concernant "${motif}" pour un montant restant de ${amount} FCFA arrive à échéance aujourd'hui (${dateEcheance}). Merci d'effectuer votre règlement auprès de ${companyNom}.`;
+    case 'J+3':
+      return `Bonjour ${clientNom}, sauf erreur de notre part, votre créance de ${amount} FCFA (${motif}) auprès de ${companyNom} est arrivée à échéance le ${dateEcheance}. Merci de bien vouloir régulariser ce paiement.`;
+    case 'J+7':
+      return `Rappel important : Bonjour ${clientNom}, nous constatons un retard de paiement de 7 jours pour votre facture "${motif}" (solde : ${amount} FCFA) échue le ${dateEcheance}. Merci de procéder au règlement dans les meilleurs délais. ${companyNom}.`;
+    case 'J+14':
+      return `AVIS DE RETARD : ${clientNom}, votre facture "${motif}" présente un retard de 14 jours pour un solde de ${amount} FCFA. Nous vous prions de régulariser votre situation sans délai. Contactez ${companyNom}.`;
+    case 'J+30':
+      return `URGENT - DERNIER AVIS : ${clientNom}, votre impayé de ${amount} FCFA chez ${companyNom} (${motif}) a dépassé 30 jours de retard. Sans règlement sous 48h, votre dossier sera transmis au contentieux.`;
+    case 'manuel':
+    default:
+      if (tone === 'ferme') {
+        return `Rappel important : Bonjour ${clientNom}, nous constatons que votre créance de ${amount} FCFA (${motif}) auprès de ${companyNom} n'a pas encore été réglée malgré l'échéance dépassée du ${dateEcheance}. Merci d'effectuer votre paiement dès aujourd'hui.`;
+      } else if (tone === 'mise_en_demeure') {
+        return `URGENT - DERNIER AVIS : ${clientNom}, votre impayé de ${amount} FCFA chez ${companyNom} pour "${motif}" fait l'objet d'un retard prolongé. Sans règlement sous 48h, votre dossier sera transmis au service contentieux. Contactez-nous immédiatement.`;
+      } else if (tone === 'preventif') {
+        return `Bonjour ${clientNom}, nous vous rappelons amicalement que votre facture pour "${motif}" (solde : ${amount} FCFA) arrive à échéance le ${dateEcheance}. Merci de préparer votre règlement. Bien cordialement, ${companyNom}.`;
+      } else if (tone === 'info') {
+        return `Bonjour ${clientNom}, pour information, le règlement de ${amount} FCFA concernant "${motif}" est attendu auprès de ${companyNom} d'ici le ${dateEcheance}. Nous restons à votre disposition pour tout renseignement.`;
+      } else {
+        return `Bonjour ${clientNom}, sauf erreur de notre part, votre facture concernant "${motif}" pour un montant restant de ${amount} FCFA est arrivée à échéance le ${dateEcheance}. Merci de bien vouloir procéder à son règlement. Cordialement, ${companyNom}.`;
+      }
+  }
+}
+
+export function parseDueDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const str = dateStr.trim();
+  // Format DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+    const [day, month, year] = str.split('/').map(Number);
+    const d = new Date(year, month - 1, day, 23, 59, 59, 999);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Format YYYY-MM-DD
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(str)) {
+    const [year, month, day] = str.split('-').map(Number);
+    const d = new Date(year, month - 1, day, 23, 59, 59, 999);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return null;
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
 export function computeCreanceStatus(montantTotal: number, montantPaye: number, dateEcheance: string): CreanceStatut {
-  const solde = Math.max(0, montantTotal - montantPaye);
+  const solde = Math.max(0, Number(montantTotal || 0) - Number(montantPaye || 0));
   if (solde <= 0) {
     return 'payee';
   }
 
   // Vérification de la date d'échéance (fin de journée)
   if (dateEcheance) {
-    const echeanceDate = new Date(dateEcheance);
-    echeanceDate.setHours(23, 59, 59, 999);
-    if (!isNaN(echeanceDate.getTime()) && echeanceDate.getTime() < Date.now()) {
+    const echeanceDate = parseDueDate(dateEcheance);
+    if (echeanceDate && echeanceDate.getTime() < Date.now()) {
       return 'en_retard';
     }
   }
 
-  if (montantPaye > 0) {
+  if (Number(montantPaye || 0) > 0) {
     return 'partiellement_payee';
   }
 
+  return 'en_attente';
+}
+
+export function computeDemandePaiementStatus(
+  statut: DemandePaiementStatut,
+  dateExpiration: string,
+  montant: number,
+  montantPaye: number
+): DemandePaiementStatut {
+  if (statut === 'annulee') {
+    return 'annulee';
+  }
+  if (montantPaye >= montant && montant > 0) {
+    return 'payee';
+  }
+  if (dateExpiration) {
+    const expDate = new Date(dateExpiration);
+    expDate.setHours(23, 59, 59, 999);
+    if (!isNaN(expDate.getTime()) && expDate.getTime() < Date.now()) {
+      return 'expiree';
+    }
+  }
+  if (montantPaye > 0) {
+    return 'partiellement_payee';
+  }
   return 'en_attente';
 }
 
@@ -35,6 +205,8 @@ class Database {
     clients: [],
     creances: [],
     paiements: [],
+    demandes_paiement: [],
+    relances_logs: [],
     activity_logs: [],
   };
 
@@ -57,6 +229,8 @@ class Database {
           clients: parsed.clients || [],
           creances: parsed.creances || [],
           paiements: parsed.paiements || [],
+          demandes_paiement: parsed.demandes_paiement || [],
+          relances_logs: parsed.relances_logs || [],
           activity_logs: parsed.activity_logs || [],
         };
         this.migrateAndSync();
@@ -258,6 +432,37 @@ class Database {
           });
           modified = true;
         }
+      }
+    }
+
+    // Initialisation des demandes de paiement si vide
+    if (!this.data.demandes_paiement) {
+      this.data.demandes_paiement = [];
+      modified = true;
+    }
+
+    if (this.data.demandes_paiement.length === 0 && this.data.creances.length > 0) {
+      const now = new Date().toISOString();
+      const expDate = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString().split('T')[0];
+      const rcCreances = this.data.creances.filter(c => c.entreprise_id === 'ent-royal-clean');
+      if (rcCreances.length > 0) {
+        this.data.demandes_paiement.push({
+          id: 'dem-rc-01',
+          entreprise_id: 'ent-royal-clean',
+          creance_id: rcCreances[0].id,
+          client_id: rcCreances[0].client_id,
+          montant: rcCreances[0].solde > 0 ? rcCreances[0].solde : rcCreances[0].montant_total,
+          montant_paye: 0,
+          motif: `Lien de paiement - ${rcCreances[0].motif}`,
+          token: 'pay_rc_7a9f2b1c4e',
+          date_creation: now.split('T')[0],
+          date_expiration: expDate,
+          statut: 'en_attente',
+          description: rcCreances[0].description,
+          created_at: now,
+          updated_at: now,
+        });
+        modified = true;
       }
     }
 
@@ -773,9 +978,10 @@ class Database {
   ): Creance[] {
     let list = this.data.creances.filter(c => c.entreprise_id === entrepriseId);
 
-    // Mettre à jour les statuts en temps réel pour tenir compte de la date d'échéance
+    // Mettre à jour les soldes et statuts en temps réel pour tenir compte de la date d'échéance et des paiements
     for (const c of list) {
-      const computed = computeCreanceStatus(c.montant_total, c.montant_paye, c.date_echeance);
+      c.solde = Math.max(0, Number(c.montant_total || 0) - Number(c.montant_paye || 0));
+      const computed = computeCreanceStatus(c.montant_total, c.montant_paye || 0, c.date_echeance);
       if (c.statut !== computed) {
         c.statut = computed;
       }
@@ -800,6 +1006,73 @@ class Database {
     }
 
     return list;
+  }
+
+  /**
+   * Synthèse et classification des relances (en retard vs à venir vs soldées)
+   * Strictement isolée par entreprise (tenant)
+   */
+  public getRelancesByEntrepriseId(entrepriseId: string) {
+    const allCreances = this.getCreancesByEntrepriseId(entrepriseId);
+    const overdue: Creance[] = [];
+    const upcoming: Creance[] = [];
+    const allUnpaid: Creance[] = [];
+    const upToDate: Creance[] = [];
+
+    let totalOverdueAmount = 0;
+    let totalUpcomingAmount = 0;
+    let totalUnpaidAmount = 0;
+    let totalPaidAmount = 0;
+
+    const overdueClientIds = new Set<string>();
+    const upcomingClientIds = new Set<string>();
+    const allUnpaidClientIds = new Set<string>();
+
+    for (const c of allCreances) {
+      const solde = Math.max(0, Number(c.montant_total || 0) - Number(c.montant_paye || 0));
+      c.solde = solde;
+
+      if (solde === 0) {
+        upToDate.push(c);
+        totalPaidAmount += Number(c.montant_paye || 0);
+      } else {
+        allUnpaid.push(c);
+        totalUnpaidAmount += solde;
+        allUnpaidClientIds.add(c.client_id);
+
+        if (c.statut === 'en_retard') {
+          overdue.push(c);
+          totalOverdueAmount += solde;
+          overdueClientIds.add(c.client_id);
+        } else {
+          // Solde > 0 et date d'échéance non dépassée (en_attente ou partiellement_payee)
+          upcoming.push(c);
+          totalUpcomingAmount += solde;
+          upcomingClientIds.add(c.client_id);
+        }
+      }
+    }
+
+    return {
+      overdue,
+      upcoming,
+      allUnpaid,
+      upToDate,
+      summary: {
+        totalOverdueAmount,
+        totalUpcomingAmount,
+        totalUnpaidAmount,
+        totalPaidAmount,
+        overdueCount: overdue.length,
+        upcomingCount: upcoming.length,
+        allUnpaidCount: allUnpaid.length,
+        upToDateCount: upToDate.length,
+        overdueClientsCount: overdueClientIds.size,
+        upcomingClientsCount: upcomingClientIds.size,
+        totalUnpaidClientsCount: allUnpaidClientIds.size,
+        isFullyUpToDate: allUnpaid.length === 0,
+      },
+    };
   }
 
   public getCreanceById(id: string, entrepriseId: string): Creance | undefined {
@@ -894,10 +1167,398 @@ class Database {
       updated_at: new Date().toISOString(),
     };
 
+    // 3. Mettre à jour les demandes de paiement associées à cette créance
+    if (this.data.demandes_paiement) {
+      for (const d of this.data.demandes_paiement) {
+        if (d.creance_id === paiement.creance_id && d.entreprise_id === paiement.entreprise_id && d.statut !== 'annulee') {
+          const demPaye = (d.montant_paye || 0) + paiement.montant;
+          d.montant_paye = demPaye;
+          d.statut = computeDemandePaiementStatus(d.statut, d.date_expiration, d.montant, demPaye);
+          d.updated_at = new Date().toISOString();
+        }
+      }
+    }
+
     this.save();
     return {
       paiement,
       creance: this.data.creances[creanceIdx],
+    };
+  }
+
+  // --- Demandes de paiement & Liens publics (STRICTEMENT ISOLÉS PAR TENANT) ---
+  public getDemandesPaiementByEntrepriseId(
+    entrepriseId: string,
+    filter?: { creanceId?: string; clientId?: string; statut?: string }
+  ): (DemandePaiement & { client_nom?: string; client_telephone?: string; motif_creance?: string; creance_statut?: string })[] {
+    if (!this.data.demandes_paiement) this.data.demandes_paiement = [];
+    let list = this.data.demandes_paiement.filter(d => d.entreprise_id === entrepriseId);
+
+    // Mise à jour dynamique des statuts (expiration, paiements)
+    let hasUpdated = false;
+    list = list.map(d => {
+      const computed = computeDemandePaiementStatus(
+        d.statut,
+        d.date_expiration,
+        d.montant,
+        d.montant_paye || 0
+      );
+      if (d.statut !== computed && d.statut !== 'annulee' && d.statut !== 'payee') {
+        d.statut = computed;
+        hasUpdated = true;
+      }
+      return d;
+    });
+
+    if (hasUpdated) {
+      this.save();
+    }
+
+    if (filter?.creanceId) {
+      list = list.filter(d => d.creance_id === filter.creanceId);
+    }
+    if (filter?.clientId) {
+      list = list.filter(d => d.client_id === filter.clientId);
+    }
+    if (filter?.statut && filter.statut !== 'toutes') {
+      list = list.filter(d => d.statut === filter.statut);
+    }
+
+    return list.map(demande => {
+      const client = this.getClientById(demande.client_id, entrepriseId);
+      const creance = this.getCreanceById(demande.creance_id, entrepriseId);
+      return {
+        ...demande,
+        client_nom: client ? client.nom : 'Client inconnu',
+        client_telephone: client ? client.telephone : '',
+        motif_creance: creance ? creance.motif : demande.motif,
+        creance_statut: creance ? creance.statut : 'en_attente',
+      };
+    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  public getDemandePaiementById(id: string, entrepriseId: string): DemandePaiement | undefined {
+    if (!this.data.demandes_paiement) this.data.demandes_paiement = [];
+    const d = this.data.demandes_paiement.find(item => item.id === id && item.entreprise_id === entrepriseId);
+    if (d) {
+      const computed = computeDemandePaiementStatus(d.statut, d.date_expiration, d.montant, d.montant_paye || 0);
+      if (d.statut !== computed && d.statut !== 'annulee' && d.statut !== 'payee') {
+        d.statut = computed;
+        this.save();
+      }
+    }
+    return d;
+  }
+
+  public getDemandePaiementByToken(token: string): {
+    demande: DemandePaiement;
+    entreprise: Entreprise;
+    client: Client;
+    creance: Creance;
+  } | undefined {
+    if (!this.data.demandes_paiement) this.data.demandes_paiement = [];
+    const demande = this.data.demandes_paiement.find(d => d.token === token);
+    if (!demande) return undefined;
+
+    const computed = computeDemandePaiementStatus(
+      demande.statut,
+      demande.date_expiration,
+      demande.montant,
+      demande.montant_paye || 0
+    );
+    if (demande.statut !== computed && demande.statut !== 'annulee' && demande.statut !== 'payee') {
+      demande.statut = computed;
+      this.save();
+    }
+
+    const entreprise = this.getEntrepriseById(demande.entreprise_id);
+    if (!entreprise) return undefined;
+
+    const client = this.getClientById(demande.client_id, demande.entreprise_id);
+    if (!client) return undefined;
+
+    const creance = this.getCreanceById(demande.creance_id, demande.entreprise_id);
+    if (!creance) return undefined;
+
+    return {
+      demande,
+      entreprise,
+      client,
+      creance,
+    };
+  }
+
+  public createDemandePaiement(demande: DemandePaiement): DemandePaiement {
+    if (!this.data.demandes_paiement) this.data.demandes_paiement = [];
+
+    demande.statut = computeDemandePaiementStatus(
+      demande.statut || 'en_attente',
+      demande.date_expiration,
+      demande.montant,
+      demande.montant_paye || 0
+    );
+
+    this.data.demandes_paiement.unshift(demande);
+    this.save();
+    return demande;
+  }
+
+  public updateDemandePaiement(id: string, entrepriseId: string, updates: Partial<DemandePaiement>): DemandePaiement | undefined {
+    if (!this.data.demandes_paiement) this.data.demandes_paiement = [];
+    const idx = this.data.demandes_paiement.findIndex(d => d.id === id && d.entreprise_id === entrepriseId);
+    if (idx === -1) return undefined;
+
+    const existing = this.data.demandes_paiement[idx];
+    const newMontant = updates.montant !== undefined ? updates.montant : existing.montant;
+    const newMontantPaye = updates.montant_paye !== undefined ? updates.montant_paye : (existing.montant_paye || 0);
+    const newDateExp = updates.date_expiration !== undefined ? updates.date_expiration : existing.date_expiration;
+    const baseStatut = updates.statut !== undefined ? updates.statut : existing.statut;
+
+    const newStatut = computeDemandePaiementStatus(baseStatut, newDateExp, newMontant, newMontantPaye);
+
+    this.data.demandes_paiement[idx] = {
+      ...existing,
+      ...updates,
+      montant: newMontant,
+      montant_paye: newMontantPaye,
+      date_expiration: newDateExp,
+      statut: newStatut,
+      updated_at: new Date().toISOString(),
+    };
+
+    this.save();
+    return this.data.demandes_paiement[idx];
+  }
+
+  public cancelDemandePaiement(id: string, entrepriseId: string): DemandePaiement | undefined {
+    if (!this.data.demandes_paiement) this.data.demandes_paiement = [];
+    const idx = this.data.demandes_paiement.findIndex(d => d.id === id && d.entreprise_id === entrepriseId);
+    if (idx === -1) return undefined;
+
+    this.data.demandes_paiement[idx].statut = 'annulee';
+    this.data.demandes_paiement[idx].updated_at = new Date().toISOString();
+    this.save();
+    return this.data.demandes_paiement[idx];
+  }
+
+  // --- Relances logs & Automatisations (STRICTEMENT ISOLÉES PAR TENANT) ---
+  public getRelanceLogsByEntrepriseId(entrepriseId: string): RelanceLog[] {
+    if (!this.data.relances_logs) this.data.relances_logs = [];
+    return this.data.relances_logs
+      .filter(l => l.entreprise_id === entrepriseId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  public createRelanceLog(log: RelanceLog): RelanceLog {
+    if (!this.data.relances_logs) this.data.relances_logs = [];
+    this.data.relances_logs.unshift(log);
+    if (this.data.relances_logs.length > 500) {
+      this.data.relances_logs = this.data.relances_logs.slice(0, 500);
+    }
+    this.save();
+    return log;
+  }
+
+  public getAutoRelanceSettings(entrepriseId: string): { active: boolean; milestones: RelanceMilestone[] } {
+    const ent = this.getEntrepriseById(entrepriseId);
+    return {
+      active: ent?.relance_auto_active !== false,
+      milestones: (ent?.relance_auto_milestones as RelanceMilestone[]) || DEFAULT_RELANCE_MILESTONES,
+    };
+  }
+
+  public updateAutoRelanceSettings(
+    entrepriseId: string,
+    settings: { active?: boolean; milestones?: RelanceMilestone[] }
+  ): { active: boolean; milestones: RelanceMilestone[] } {
+    const ent = this.getEntrepriseById(entrepriseId);
+    if (!ent) throw new Error('Entreprise introuvable');
+
+    const updates: Partial<Entreprise> = {};
+    if (settings.active !== undefined) updates.relance_auto_active = settings.active;
+    if (settings.milestones !== undefined) updates.relance_auto_milestones = settings.milestones;
+
+    this.updateEntreprise(entrepriseId, updates);
+    return this.getAutoRelanceSettings(entrepriseId);
+  }
+
+  /**
+   * Enregistre une relance manuelle effectuée par l'entreprise
+   */
+  public recordManualRelance(
+    entrepriseId: string,
+    payload: { creanceId: string; message: string; canal?: 'whatsapp' | 'sms' }
+  ): RelanceLog {
+    const creance = this.getCreanceById(payload.creanceId, entrepriseId);
+    if (!creance) throw new Error('Créance introuvable ou non autorisée');
+
+    const client = this.getClientById(creance.client_id, entrepriseId);
+    const rawPhone = client?.telephone || creance.client_telephone || '';
+    const norm = normalizeWhatsAppPhone(rawPhone);
+
+    const now = new Date().toISOString();
+    const log: RelanceLog = {
+      id: 'rel-' + Math.random().toString(36).substring(2, 9),
+      entreprise_id: entrepriseId,
+      creance_id: creance.id,
+      client_id: creance.client_id,
+      client_nom: client ? client.nom : (creance.client_nom || 'Client'),
+      client_telephone: rawPhone,
+      telephone_normalise: norm.normalized,
+      type: 'manuel',
+      milestone: 'manuel',
+      montant_solde: creance.solde,
+      montant_total: creance.montant_total,
+      statut: norm.isValid ? 'envoye' : 'echec',
+      motif_echec: norm.isValid ? undefined : (norm.error || 'Numéro WhatsApp manquant ou invalide'),
+      message: payload.message,
+      canal: payload.canal || 'whatsapp',
+      created_at: now,
+    };
+
+    this.createRelanceLog(log);
+    this.logActivity(
+      entrepriseId,
+      'Relance WhatsApp Manuelle',
+      `Relance manuelle enregistrée pour ${log.client_nom} (Solde: ${creance.solde.toLocaleString('fr-FR')} F)`
+    );
+
+    return log;
+  }
+
+  /**
+   * Moteur d'automatisation des relances : Évalue les échéances J-7, J-3, J0, J+3, J+7, J+14, J+30
+   */
+  public processAutoRelances(
+    entrepriseId: string,
+    options?: { simulatedDate?: string; forceMilestone?: RelanceMilestone; forceCreanceId?: string }
+  ): {
+    active: boolean;
+    processedCount: number;
+    sentCount: number;
+    failedCount: number;
+    skippedCount: number;
+    logs: RelanceLog[];
+  } {
+    const entreprise = this.getEntrepriseById(entrepriseId);
+    if (!entreprise) throw new Error('Entreprise introuvable');
+
+    const settings = this.getAutoRelanceSettings(entrepriseId);
+    if (!settings.active) {
+      return {
+        active: false,
+        processedCount: 0,
+        sentCount: 0,
+        failedCount: 0,
+        skippedCount: 0,
+        logs: [],
+      };
+    }
+
+    const refDate = options?.simulatedDate ? new Date(options.simulatedDate) : new Date();
+    const creances = this.getCreancesByEntrepriseId(entrepriseId);
+    const createdLogs: RelanceLog[] = [];
+    let sentCount = 0;
+    let failedCount = 0;
+    let skippedCount = 0;
+
+    for (const creance of creances) {
+      if (options?.forceCreanceId && creance.id !== options.forceCreanceId) {
+        continue;
+      }
+
+      // Règle 1 : Vérifier le solde avant chaque relance
+      // Règle 2 : Paiement total (solde = 0) -> arrêter les relances futures
+      if (creance.solde <= 0 || creance.statut === 'payee') {
+        skippedCount++;
+        continue;
+      }
+
+      // Calcul de l'échéance / milestone
+      const { milestone } = options?.forceMilestone
+        ? { milestone: options.forceMilestone }
+        : calculateMilestone(creance.date_echeance, refDate);
+
+      // Si pas de milestone correspondant ou milestone désactivé
+      if (!milestone || !settings.milestones.includes(milestone)) {
+        skippedCount++;
+        continue;
+      }
+
+      // Vérifier si cette relance auto pour cette échéance spécifique a déjà été traitée
+      const alreadyProcessed = (this.data.relances_logs || []).some(
+        l => l.creance_id === creance.id && l.milestone === milestone && l.type === 'auto'
+      );
+      if (alreadyProcessed && !options?.forceMilestone) {
+        skippedCount++;
+        continue;
+      }
+
+      // Récupérer les infos client
+      const client = this.getClientById(creance.client_id, entrepriseId);
+      const rawPhone = client?.telephone || creance.client_telephone || '';
+      const norm = normalizeWhatsAppPhone(rawPhone);
+
+      // Règle 3 : Message personnalisé sur le solde restant (y compris en cas de paiement partiel)
+      const clientName = client ? client.nom : (creance.client_nom || 'Client');
+      const message = generateRelanceMessage(
+        milestone,
+        clientName,
+        entreprise.nom,
+        creance.solde,
+        creance.motif,
+        creance.date_echeance
+      );
+
+      const now = new Date().toISOString();
+      const isSuccess = norm.isValid;
+
+      const log: RelanceLog = {
+        id: 'rel-' + Math.random().toString(36).substring(2, 9),
+        entreprise_id: entrepriseId,
+        creance_id: creance.id,
+        client_id: creance.client_id,
+        client_nom: clientName,
+        client_telephone: rawPhone,
+        telephone_normalise: norm.normalized,
+        type: 'auto',
+        milestone,
+        montant_solde: creance.solde,
+        montant_total: creance.montant_total,
+        statut: isSuccess ? 'envoye' : 'echec',
+        motif_echec: isSuccess ? undefined : (norm.error || 'Numéro WhatsApp absent ou invalide'),
+        message,
+        canal: 'whatsapp',
+        created_at: now,
+      };
+
+      this.createRelanceLog(log);
+      createdLogs.push(log);
+
+      if (isSuccess) {
+        sentCount++;
+        this.logActivity(
+          entrepriseId,
+          'Relance Auto WhatsApp',
+          `Relance automatique (${milestone}) générée pour ${clientName} - Solde: ${creance.solde.toLocaleString('fr-FR')} F`
+        );
+      } else {
+        failedCount++;
+        this.logActivity(
+          entrepriseId,
+          'Échec Relance Auto',
+          `Échec relance (${milestone}) pour ${clientName} : Numéro WhatsApp manquant ou invalide`
+        );
+      }
+    }
+
+    return {
+      active: true,
+      processedCount: createdLogs.length,
+      sentCount,
+      failedCount,
+      skippedCount,
+      logs: createdLogs,
     };
   }
 

@@ -8,6 +8,7 @@ import { LandingPage } from './pages/LandingPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoginPage } from './pages/LoginPage';
 import { AdminPage } from './pages/AdminPage';
+import { PublicPaymentPage } from './pages/public/PublicPaymentPage';
 
 // Entreprise Portal Pages
 import { EntrepriseLayout } from './pages/entreprise/EntrepriseLayout';
@@ -15,6 +16,7 @@ import { EntrepriseDashboard } from './pages/entreprise/EntrepriseDashboard';
 import { EntrepriseSettings } from './pages/entreprise/EntrepriseSettings';
 import { ClientsPage } from './pages/entreprise/ClientsPage';
 import { CreancesPage } from './pages/entreprise/CreancesPage';
+import { DemandesPaiementPage } from './pages/entreprise/DemandesPaiementPage';
 import { PaiementsPage } from './pages/entreprise/PaiementsPage';
 import { RelancesPage } from './pages/entreprise/RelancesPage';
 
@@ -28,21 +30,25 @@ export default function App() {
               {/* 1. Page d'accueil VALIDÉE et INCHANGÉE */}
               <Route path="/" element={<LandingPage />} />
 
-              {/* 2. Inscription Entreprise */}
+              {/* 2. Page publique de règlement sécurisé par lien (Sans connexion) */}
+              <Route path="/payer/:token" element={<PublicPaymentPage />} />
+
+              {/* 3. Inscription Entreprise */}
               <Route path="/inscription" element={<RegisterPage />} />
 
-              {/* 3. Connexion Entreprise */}
+              {/* 4. Connexion Entreprise */}
               <Route path="/connexion" element={<LoginPage />} />
 
-              {/* 4. Super Admin (Connexion & Dashboard) */}
+              {/* 5. Super Admin (Connexion & Dashboard) */}
               <Route path="/admin" element={<AdminPage />} />
 
-              {/* 5. Espace Entreprise (Tenant Isolé) */}
+              {/* 6. Espace Entreprise (Tenant Isolé) */}
               <Route path="/entreprise" element={<EntrepriseLayout />}>
                 <Route index element={<EntrepriseDashboard />} />
                 <Route path="parametres" element={<EntrepriseSettings />} />
                 <Route path="clients" element={<ClientsPage />} />
                 <Route path="creances" element={<CreancesPage />} />
+                <Route path="demandes-paiement" element={<DemandesPaiementPage />} />
                 <Route path="paiements" element={<PaiementsPage />} />
                 <Route path="relances" element={<RelancesPage />} />
               </Route>

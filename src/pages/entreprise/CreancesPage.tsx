@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { apiRequest } from '../../services/api';
+import { apiRequest, type DemandePaiementItem } from '../../services/api';
 import {
   FileText,
   Search,
@@ -13,7 +13,9 @@ import {
   Send,
   ExternalLink,
   Copy,
+  Check,
   Sparkles,
+  Link2,
 } from 'lucide-react';
 
 interface ClientOption {
@@ -94,6 +96,18 @@ export const CreancesPage: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isFastClientModalOpen, setIsFastClientModalOpen] = useState(false);
+  const [isDemandeModalOpen, setIsDemandeModalOpen] = useState(false);
+  const [targetCreanceForDemande, setTargetCreanceForDemande] = useState<CreanceItem | null>(null);
+  const [createdDemande, setCreatedDemande] = useState<{ token: string; url: string; montant: number; clientNom: string } | null>(null);
+  const [creanceDemandes, setCreanceDemandes] = useState<DemandePaiementItem[]>([]);
+  const [demandeForm, setDemandeForm] = useState({
+    montant: '',
+    motif: '',
+    description: '',
+    expiration: '14',
+    customExp: '',
+  });
+
   const [selectedCreanceDetail, setSelectedCreanceDetail] = useState<CreanceDetailResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -156,12 +170,71 @@ export const CreancesPage: React.FC = () => {
     try {
       setDetailLoading(true);
       setIsDetailModalOpen(true);
-      const res = await apiRequest<CreanceDetailResponse>(`/api/company/creances/${creanceId}`);
+      const [res, demandesRes] = await Promise.all([
+        apiRequest<CreanceDetailResponse>(`/api/company/creances/${creanceId}`),
+        apiRequest<{ demandes: DemandePaiementItem[] }>(`/api/company/creances/${creanceId}/demandes-paiement`).catch(() => ({ demandes: [] })),
+      ]);
       setSelectedCreanceDetail(res);
+      setCreanceDemandes(demandesRes.demandes || []);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Impossible de charger la créance');
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleOpenCreateDemande = (creance: CreanceItem) => {
+    setTargetCreanceForDemande(creance);
+    setDemandeForm({
+      montant: creance.solde.toString(),
+      motif: `Règlement - ${creance.motif}`,
+      description: creance.description || '',
+      expiration: '14',
+      customExp: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString().split('T')[0],
+    });
+    setIsDemandeModalOpen(true);
+  };
+
+  const handleSubmitCreateDemande = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetCreanceForDemande) return;
+
+    try {
+      setActionLoading(true);
+      setErrorMsg(null);
+      const res = await apiRequest<{ message: string; demande: DemandePaiementItem; public_url: string }>(
+        '/api/company/demandes-paiement',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            creance_id: targetCreanceForDemande.id,
+            montant: Number(demandeForm.montant),
+            motif: demandeForm.motif,
+            description: demandeForm.description,
+            date_expiration: demandeForm.customExp,
+          }),
+        }
+      );
+
+      setSuccessMsg('Demande de paiement générée avec succès !');
+      setIsDemandeModalOpen(false);
+      setCreatedDemande({
+        token: res.demande.token,
+        url: `${window.location.origin}/payer/${res.demande.token}`,
+        montant: res.demande.montant,
+        clientNom: targetCreanceForDemande.client_nom || 'Client',
+      });
+
+      if (selectedCreanceDetail && selectedCreanceDetail.creance.id === targetCreanceForDemande.id) {
+        const updatedDemandes = await apiRequest<{ demandes: DemandePaiementItem[] }>(
+          `/api/company/creances/${targetCreanceForDemande.id}/demandes-paiement`
+        ).catch(() => ({ demandes: [] }));
+        setCreanceDemandes(updatedDemandes.demandes || []);
+      }
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Erreur génération lien');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -654,20 +727,36 @@ export const CreancesPage: React.FC = () => {
                       <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.35rem' }} onClick={e => e.stopPropagation()}>
                           {creance.solde > 0 && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openCreanceDetail(creance.id).then(() => {
-                                  handleOpenPayment(creance);
-                                });
-                              }}
-                              className="btn btn-primary btn-sm"
-                              style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                            >
-                              <CreditCard size={12} />
-                              <span>Encaisser</span>
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenCreateDemande(creance);
+                                }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                title="Créer une demande de paiement / lien public"
+                              >
+                                <Link2 size={12} color={primaryColor} />
+                                <span>Lien</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCreanceDetail(creance.id).then(() => {
+                                    handleOpenPayment(creance);
+                                  });
+                                }}
+                                className="btn btn-primary btn-sm"
+                                style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <CreditCard size={12} />
+                                <span>Encaisser</span>
+                              </button>
+                            </>
                           )}
                           <button
                             type="button"
@@ -1143,31 +1232,84 @@ export const CreancesPage: React.FC = () => {
                       borderRadius: 'var(--radius-sm)',
                       padding: '0.85rem',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
+                      flexDirection: 'column',
                       gap: '0.65rem',
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: 700, color: 'white', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <ExternalLink size={14} color={primaryColor} />
-                        <span>Lien de Paiement en ligne</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'white', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <Link2 size={14} color={primaryColor} />
+                          <span>Liens de Paiement en ligne ({creanceDemandes.length})</span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          Permet au client de consulter et régler sa créance en ligne
+                        </div>
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        Permettra le règlement par Mobile Money / Carte
-                      </div>
+
+                      {selectedCreanceDetail.creance.solde > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenCreateDemande(selectedCreanceDetail.creance)}
+                          className="btn btn-primary btn-sm"
+                          style={{ backgroundColor: primaryColor, borderColor: primaryColor, fontSize: '0.72rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                        >
+                          <Plus size={12} />
+                          <span>Générer un lien</span>
+                        </button>
+                      )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleCopyPaymentLink(selectedCreanceDetail.paymentLinkPreview.paymentUrl)}
-                      className="btn btn-secondary btn-sm"
-                      style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                    >
-                      <Copy size={12} />
-                      <span>{copiedLink ? 'Lien copié !' : 'Copier le lien'}</span>
-                    </button>
+                    {creanceDemandes.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.25rem' }}>
+                        {creanceDemandes.map(d => {
+                          const linkUrl = `${window.location.origin}/payer/${d.token}`;
+                          return (
+                            <div
+                              key={d.id}
+                              style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.06)',
+                                borderRadius: '6px',
+                                padding: '0.45rem 0.65rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '0.5rem',
+                                fontSize: '0.76rem',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden' }}>
+                                <span style={{ fontWeight: 700, color: 'white' }}>{d.montant.toLocaleString('fr-FR')} F</span>
+                                <span style={{ color: 'var(--text-muted)' }}>• /payer/{d.token.substring(0, 10)}...</span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyPaymentLink(linkUrl)}
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ padding: '0.2rem 0.45rem', fontSize: '0.68rem' }}
+                                  title="Copier le lien"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                                <a
+                                  href={`/payer/${d.token}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ padding: '0.2rem 0.45rem', fontSize: '0.68rem' }}
+                                  title="Ouvrir la page"
+                                >
+                                  <ExternalLink size={11} />
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Relance WhatsApp Directe */}
@@ -1326,6 +1468,202 @@ export const CreancesPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================== */}
+      {/* MODAL 5 : CRÉER DEMANDE DE PAIEMENT POUR CRÉANCE     */}
+      {/* ==================================================== */}
+      {isDemandeModalOpen && targetCreanceForDemande && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5, 7, 13, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 130,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={() => setIsDemandeModalOpen(false)}
+        >
+          <div
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)',
+              width: '100%',
+              maxWidth: '480px',
+              padding: '1.25rem',
+              boxShadow: '0 20px 45px rgba(0,0,0,0.6)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${primaryColor}22`, color: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Link2 size={16} />
+                </div>
+                <div>
+                  <h3 style={{ color: 'white', margin: 0, fontSize: '1.02rem', fontWeight: 800 }}>
+                    Créer un lien de paiement
+                  </h3>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Client : <strong>{targetCreanceForDemande.client_nom}</strong>
+                  </div>
+                </div>
+              </div>
+              <button type="button" onClick={() => setIsDemandeModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitCreateDemande} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
+                  Montant à payer (FCFA) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="100"
+                  max={targetCreanceForDemande.solde > 0 ? targetCreanceForDemande.solde : undefined}
+                  value={demandeForm.montant}
+                  onChange={e => setDemandeForm({ ...demandeForm, montant: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
+                />
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                  Solde actuel de la créance : {targetCreanceForDemande.solde.toLocaleString('fr-FR')} FCFA
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
+                  Motif visible par le client *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={demandeForm.motif}
+                  onChange={e => setDemandeForm({ ...demandeForm, motif: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.82rem', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
+                  Date d'expiration
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={demandeForm.customExp}
+                  onChange={e => setDemandeForm({ ...demandeForm, customExp: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.82rem', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.35rem' }}>
+                <button type="button" onClick={() => setIsDemandeModalOpen(false)} className="btn btn-secondary btn-sm">Annuler</button>
+                <button type="submit" disabled={actionLoading} className="btn btn-primary btn-sm" style={{ backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  {actionLoading ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                  <span>Générer le lien public</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================== */}
+      {/* MODAL 6 : CONFIRMATION LIEN DE PAIEMENT GÉNÉRÉ       */}
+      {/* ==================================================== */}
+      {createdDemande && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5, 7, 13, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 140,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={() => setCreatedDemande(null)}
+        >
+          <div
+            style={{
+              background: 'var(--bg-surface)',
+              border: `1px solid ${primaryColor}55`,
+              borderRadius: 'var(--radius-lg)',
+              width: '100%',
+              maxWidth: '460px',
+              padding: '1.5rem',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.7)',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: `${primaryColor}20`, color: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+              <CheckCircle2 size={26} />
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0 }}>Lien de paiement créé !</h3>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                Montant : <strong style={{ color: 'white' }}>{createdDemande.montant.toLocaleString('fr-FR')} FCFA</strong> • Client : <strong>{createdDemande.clientNom}</strong>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.65rem 0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <div style={{ fontSize: '0.78rem', color: primaryColor, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+                {createdDemande.url}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(createdDemande.url);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2500);
+                }}
+                className="btn btn-primary btn-sm"
+                style={{ backgroundColor: primaryColor, borderColor: primaryColor, padding: '0.3rem 0.6rem', fontSize: '0.74rem', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+              >
+                {copiedLink ? <Check size={12} /> : <Copy size={12} />}
+                <span>{copiedLink ? 'Copié !' : 'Copier'}</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <a
+                href={createdDemande.url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+              >
+                <ExternalLink size={13} />
+                <span>Tester le lien</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setCreatedDemande(null)}
+                className="btn btn-primary btn-sm"
+                style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', padding: '0.5rem', fontSize: '0.78rem' }}
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}

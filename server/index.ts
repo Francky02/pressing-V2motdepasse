@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { authRouter } from './routes/auth.routes.js';
 import { companyRouter } from './routes/company.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
+import { publicRouter } from './routes/public.routes.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Mount Routes
+app.use('/api/public', publicRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/company', companyRouter);
 app.use('/api/entreprise', companyRouter);

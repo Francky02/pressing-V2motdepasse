@@ -42,3 +42,67 @@ export async function apiRequest<T = unknown>(
 
   return data as T;
 }
+
+export type DemandePaiementStatut = 'en_attente' | 'partiellement_payee' | 'payee' | 'expiree' | 'annulee';
+
+export interface DemandePaiementItem {
+  id: string;
+  entreprise_id: string;
+  creance_id: string;
+  client_id: string;
+  montant: number;
+  montant_paye?: number;
+  motif: string;
+  token: string;
+  date_creation: string;
+  date_expiration: string;
+  statut: DemandePaiementStatut;
+  description?: string;
+  client_nom?: string;
+  client_telephone?: string;
+  motif_creance?: string;
+  creance_statut?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicPaymentPageData {
+  demande: {
+    id: string;
+    token: string;
+    montant: number;
+    montant_paye: number;
+    motif: string;
+    description: string;
+    date_creation: string;
+    date_expiration: string;
+    statut: DemandePaiementStatut;
+    created_at: string;
+  };
+  company: {
+    id: string;
+    nom: string;
+    logo: string | null;
+    couleur_principale: string;
+    couleur_secondaire: string;
+    email: string;
+    telephone: string;
+    adresse: string;
+    secteur: string;
+  };
+  client: {
+    id: string;
+    nom: string;
+    telephone: string;
+  };
+  creance: {
+    id: string;
+    motif: string;
+    montant_total: number;
+    montant_paye: number;
+    solde: number;
+    date_echeance: string;
+    statut: string;
+  };
+}
+

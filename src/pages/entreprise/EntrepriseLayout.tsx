@@ -14,6 +14,7 @@ import {
   X,
   Sparkles,
   ShieldCheck,
+  Link2,
 } from 'lucide-react';
 
 export const EntrepriseLayout: React.FC = () => {
@@ -40,6 +41,7 @@ export const EntrepriseLayout: React.FC = () => {
     { label: 'Tableau de bord', path: '/entreprise', icon: <LayoutDashboard size={18} /> },
     { label: 'Clients', path: '/entreprise/clients', icon: <Users size={18} /> },
     { label: 'Créances', path: '/entreprise/creances', icon: <FileText size={18} /> },
+    { label: 'Liens de paiement', path: '/entreprise/demandes-paiement', icon: <Link2 size={18} /> },
     { label: 'Paiements', path: '/entreprise/paiements', icon: <CreditCard size={18} /> },
     { label: 'Relances', path: '/entreprise/relances', icon: <BellRing size={18} /> },
     { label: 'Paramètres', path: '/entreprise/parametres', icon: <Settings size={18} /> },

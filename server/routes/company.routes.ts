@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db.js';
 import { requireAuth, requireTenant, AuthenticatedRequest } from '../auth.js';
-import { Client, Creance, Paiement, ClientType, MoyenPaiement } from '../types.js';
+import { Client, Creance, Paiement, ClientType, MoyenPaiement, DemandePaiement } from '../types.js';
 
 export const companyRouter = Router();
 
@@ -547,3 +547,292 @@ companyRouter.get('/dashboard', (req: AuthenticatedRequest, res: Response) => {
     recentActivities: activities.slice(0, 5),
   });
 });
+
+// ==========================================
+// 6. DEMANDES DE PAIEMENT & LIENS PUBLICS
+// ==========================================
+
+// Liste des demandes de paiement de l'entreprise
+companyRouter.get('/demandes-paiement', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const tenantId = req.company.id;
+  const creanceId = typeof req.query.creance_id === 'string' ? req.query.creance_id : undefined;
+  const clientId = typeof req.query.client_id === 'string' ? req.query.client_id : undefined;
+  const statut = typeof req.query.statut === 'string' ? req.query.statut : undefined;
+  const search = typeof req.query.search === 'string' ? req.query.search.toLowerCase().trim() : '';
+
+  let demandes = db.getDemandesPaiementByEntrepriseId(tenantId, {
+    creanceId,
+    clientId,
+    statut,
+  });
+
+  if (search) {
+    demandes = demandes.filter(d =>
+      (d.client_nom && d.client_nom.toLowerCase().includes(search)) ||
+      (d.motif && d.motif.toLowerCase().includes(search)) ||
+      (d.token && d.token.toLowerCase().includes(search)) ||
+      (d.client_telephone && d.client_telephone.toLowerCase().includes(search))
+    );
+  }
+
+  return res.json({
+    demandes,
+    total: demandes.length,
+  });
+});
+
+// Création d'une demande de paiement liée à une créance
+companyRouter.post('/demandes-paiement', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const {
+    creance_id,
+    montant,
+    motif,
+    description,
+    date_expiration,
+  } = req.body;
+
+  if (!creance_id) {
+    return res.status(400).json({ error: 'Une créance doit être sélectionnée' });
+  }
+
+  const creance = db.getCreanceById(creance_id, req.company.id);
+  if (!creance) {
+    return res.status(404).json({ error: 'Créance introuvable ou non autorisée' });
+  }
+
+  const client = db.getClientById(creance.client_id, req.company.id);
+  if (!client) {
+    return res.status(404).json({ error: 'Client associé introuvable' });
+  }
+
+  const parsedAmount = Number(montant);
+  if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ error: 'Le montant de la demande doit être supérieur à zéro' });
+  }
+
+  if (parsedAmount > creance.solde && creance.solde > 0) {
+    return res.status(400).json({
+      error: `Le montant demandé (${parsedAmount.toLocaleString('fr-FR')} FCFA) ne peut pas dépasser le solde restant (${creance.solde.toLocaleString('fr-FR')} FCFA)`,
+    });
+  }
+
+  if (!motif || !motif.trim()) {
+    return res.status(400).json({ error: 'Le motif de la demande est requis' });
+  }
+
+  const now = new Date().toISOString();
+  // Default expiration: 14 days if not specified
+  const expDate = date_expiration || new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString().split('T')[0];
+
+  // Unique secure random token
+  const token = 'pay_' + Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8);
+
+  const newDemande: DemandePaiement = {
+    id: 'dem-' + Math.random().toString(36).substring(2, 9),
+    entreprise_id: req.company.id,
+    creance_id: creance.id,
+    client_id: client.id,
+    montant: parsedAmount,
+    montant_paye: 0,
+    motif: motif.trim(),
+    token,
+    date_creation: now.split('T')[0],
+    date_expiration: expDate,
+    statut: 'en_attente',
+    description: description ? description.trim() : creance.description,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const created = db.createDemandePaiement(newDemande);
+  db.logActivity(
+    req.company.id,
+    'Création Demande Paiement',
+    `Lien de paiement créé pour ${client.nom} - ${parsedAmount.toLocaleString('fr-FR')} FCFA`
+  );
+
+  return res.status(201).json({
+    message: 'Demande de paiement générée avec succès',
+    demande: {
+      ...created,
+      client_nom: client.nom,
+      client_telephone: client.telephone,
+      motif_creance: creance.motif,
+    },
+    public_url: `/payer/${created.token}`,
+  });
+});
+
+// Consultation d'une demande de paiement spécifique
+companyRouter.get('/demandes-paiement/:id', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const demande = db.getDemandePaiementById(req.params.id, req.company.id);
+  if (!demande) {
+    return res.status(404).json({ error: 'Demande de paiement introuvable ou non autorisée' });
+  }
+
+  const client = db.getClientById(demande.client_id, req.company.id);
+  const creance = db.getCreanceById(demande.creance_id, req.company.id);
+
+  return res.json({
+    demande: {
+      ...demande,
+      client_nom: client ? client.nom : 'Client',
+      client_telephone: client ? client.telephone : '',
+      motif_creance: creance ? creance.motif : demande.motif,
+    },
+    client,
+    creance,
+    public_url: `/payer/${demande.token}`,
+  });
+});
+
+// Annulation d'une demande de paiement
+companyRouter.patch('/demandes-paiement/:id/annuler', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const canceled = db.cancelDemandePaiement(req.params.id, req.company.id);
+  if (!canceled) {
+    return res.status(404).json({ error: 'Demande de paiement introuvable ou non autorisée' });
+  }
+
+  db.logActivity(
+    req.company.id,
+    'Annulation Demande Paiement',
+    `Demande de paiement #${canceled.id} annulée`
+  );
+
+  return res.json({
+    message: 'Demande de paiement annulée avec succès',
+    demande: canceled,
+  });
+});
+
+// Demandes de paiement liées à une créance
+companyRouter.get('/creances/:id/demandes-paiement', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const creance = db.getCreanceById(req.params.id, req.company.id);
+  if (!creance) {
+    return res.status(404).json({ error: 'Créance introuvable ou non autorisée' });
+  }
+
+  const demandes = db.getDemandesPaiementByEntrepriseId(req.company.id, { creanceId: creance.id });
+
+  return res.json({
+    demandes,
+    total: demandes.length,
+  });
+});
+
+// ==========================================
+// 7. MODULE RELANCES (ÉCHÉANCES, RETARDS, SYNTHÈSE & AUTOMATISATION)
+// ==========================================
+
+// Synthèse complète des relances
+companyRouter.get('/relances', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const relancesData = db.getRelancesByEntrepriseId(req.company.id);
+  const autoSettings = db.getAutoRelanceSettings(req.company.id);
+  return res.json({
+    ...relancesData,
+    autoSettings,
+  });
+});
+
+// Paramètres d'automatisation des relances
+companyRouter.get('/relances/settings', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const settings = db.getAutoRelanceSettings(req.company.id);
+  return res.json({ settings });
+});
+
+companyRouter.put('/relances/settings', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const { active, milestones } = req.body;
+  const updated = db.updateAutoRelanceSettings(req.company.id, {
+    active: typeof active === 'boolean' ? active : undefined,
+    milestones: Array.isArray(milestones) ? milestones : undefined,
+  });
+
+  db.logActivity(
+    req.company.id,
+    'Modification Relances Auto',
+    `Paramètres de relances automatiques mis à jour (Actif: ${updated.active ? 'Oui' : 'Non'})`
+  );
+
+  return res.json({
+    message: 'Paramètres de relances automatiques enregistrés avec succès',
+    settings: updated,
+  });
+});
+
+// Historique des relances (automatiques et manuelles)
+companyRouter.get('/relances/logs', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const logs = db.getRelanceLogsByEntrepriseId(req.company.id);
+  return res.json({
+    logs,
+    total: logs.length,
+  });
+});
+
+// Enregistrement d'une relance manuelle
+companyRouter.post('/relances/manual-log', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const { creance_id, message, canal } = req.body;
+  if (!creance_id) {
+    return res.status(400).json({ error: 'Identifiant de créance requis' });
+  }
+
+  try {
+    const log = db.recordManualRelance(req.company.id, {
+      creanceId: creance_id,
+      message: message || '',
+      canal: canal || 'whatsapp',
+    });
+    return res.status(201).json({
+      message: 'Relance manuelle enregistrée dans l\'historique',
+      log,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement de la relance';
+    return res.status(400).json({ error: msg });
+  }
+});
+
+// Déclenchement / Évaluation des relances automatiques
+companyRouter.post('/relances/auto-process', (req: AuthenticatedRequest, res: Response) => {
+  if (!req.company) return res.status(404).json({ error: 'Entreprise introuvable' });
+
+  const { simulatedDate, forceMilestone, forceCreanceId } = req.body;
+
+  try {
+    const result = db.processAutoRelances(req.company.id, {
+      simulatedDate,
+      forceMilestone,
+      forceCreanceId,
+    });
+
+    return res.json({
+      message: `Traitement des relances automatiques terminé : ${result.sentCount} envoyée(s), ${result.failedCount} échec(s), ${result.skippedCount} ignorée(s)`,
+      result,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Erreur lors du traitement des relances automatiques';
+    return res.status(400).json({ error: msg });
+  }
+});
+
+
+

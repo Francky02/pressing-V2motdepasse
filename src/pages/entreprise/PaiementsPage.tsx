@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../services/api';
 import {
@@ -9,6 +10,7 @@ import {
   Receipt,
   X,
   AlertTriangle,
+  Link2,
 } from 'lucide-react';
 
 interface EnrichedPaiement {
@@ -140,6 +142,15 @@ export const PaiementsPage: React.FC = () => {
               </button>
             )}
           </div>
+
+          <Link
+            to="/entreprise/demandes-paiement"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
+          >
+            <Link2 size={13} color={primaryColor} />
+            <span>Liens de paiement</span>
+          </Link>
 
           <button
             type="button"
