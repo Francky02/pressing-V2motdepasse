@@ -16,6 +16,7 @@ import {
   RelanceMilestone,
   RelanceStatus,
   RelanceType,
+  PasswordResetToken,
 } from './types.js';
 
 const DATA_DIR = path.resolve(process.cwd(), 'server', 'data');
@@ -208,6 +209,7 @@ class Database {
     demandes_paiement: [],
     relances_logs: [],
     activity_logs: [],
+    password_reset_tokens: [],
   };
 
   constructor() {
@@ -232,6 +234,7 @@ class Database {
           demandes_paiement: parsed.demandes_paiement || [],
           relances_logs: parsed.relances_logs || [],
           activity_logs: parsed.activity_logs || [],
+          password_reset_tokens: parsed.password_reset_tokens || [],
         };
         this.migrateAndSync();
       } catch (err) {
@@ -451,11 +454,9 @@ class Database {
           entreprise_id: 'ent-royal-clean',
           creance_id: rcCreances[0].id,
           client_id: rcCreances[0].client_id,
-          montant: rcCreances[0].solde > 0 ? rcCreances[0].solde : rcCreances[0].montant_total,
-          montant_paye: 0,
-          motif: `Lien de paiement - ${rcCreances[0].motif}`,
-          token: 'pay_rc_7a9f2b1c4e',
-          date_creation: now.split('T')[0],
+          montant: rcCreances[0].solde,
+          token: 'token-rc-demo-01',
+          date_creation: now,
           date_expiration: expDate,
           statut: 'en_attente',
           description: rcCreances[0].description,
@@ -464,6 +465,11 @@ class Database {
         });
         modified = true;
       }
+    }
+
+    if (!this.data.password_reset_tokens) {
+      this.data.password_reset_tokens = [];
+      modified = true;
     }
 
     if (modified) {
@@ -861,6 +867,95 @@ class Database {
 
   public getUserByEmail(email: string): User | undefined {
     return this.data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  }
+
+  public getUserByIdentifier(identifier: string): User | undefined {
+    if (!identifier || typeof identifier !== 'string') return undefined;
+    const clean = identifier.trim().toLowerCase();
+    if (!clean) return undefined;
+
+    // 1. Recherche insensible à la casse pour l'e-mail (sans espaces)
+    const byEmail = this.data.users.find(u => u.email.toLowerCase() === clean);
+    if (byEmail) return byEmail;
+
+    // 2. Recherche par téléphone (normalisation des chiffres, indicatifs et séparateurs)
+    const inputDigits = clean.replace(/\D/g, '');
+    if (inputDigits.length >= 6) {
+      const byPhone = this.data.users.find(u => {
+        if (!u.telephone) return false;
+        const uDigits = u.telephone.replace(/\D/g, '');
+        if (!uDigits) return false;
+        if (uDigits === inputDigits) return true;
+        // Correspondance indicatif pays (ex: 2250787392776 vs 0787392776)
+        if (uDigits.startsWith('225') && uDigits.slice(3) === inputDigits) return true;
+        if (inputDigits.startsWith('225') && inputDigits.slice(3) === uDigits) return true;
+        // Correspondance suffixe (derniers 8+ chiffres)
+        if (uDigits.length >= 8 && inputDigits.length >= 8) {
+          if (uDigits.endsWith(inputDigits) || inputDigits.endsWith(uDigits)) return true;
+        }
+        return false;
+      });
+      if (byPhone) return byPhone;
+    }
+
+    return undefined;
+  }
+
+  // ==========================================
+  // PASSWORD RESET TOKENS
+  // ==========================================
+
+  public createPasswordResetToken(userId: string, tokenHash: string, expiresInMinutes = 60): PasswordResetToken {
+    if (!this.data.password_reset_tokens) {
+      this.data.password_reset_tokens = [];
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + expiresInMinutes * 60 * 1000);
+
+    const tokenRecord: PasswordResetToken = {
+      id: 'prt-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+      user_id: userId,
+      token_hash: tokenHash,
+      expires_at: expiresAt.toISOString(),
+      used: false,
+      created_at: now.toISOString(),
+    };
+
+    this.data.password_reset_tokens.push(tokenRecord);
+    this.save();
+    return tokenRecord;
+  }
+
+  public getPasswordResetToken(tokenHash: string): PasswordResetToken | undefined {
+    if (!this.data.password_reset_tokens) return undefined;
+    return this.data.password_reset_tokens.find(t => t.token_hash === tokenHash);
+  }
+
+  public markPasswordResetTokenAsUsed(tokenHash: string): boolean {
+    if (!this.data.password_reset_tokens) return false;
+    const token = this.data.password_reset_tokens.find(t => t.token_hash === tokenHash);
+    if (!token) return false;
+    token.used = true;
+    this.save();
+    return true;
+  }
+
+  public updateUserPassword(userId: string, newPasswordHash: string): boolean {
+    const user = this.data.users.find(u => u.id === userId);
+    if (!user) return false;
+    user.password_hash = newPasswordHash;
+    user.updated_at = new Date().toISOString();
+    this.save();
+    return true;
+  }
+
+  public getRecentResetTokensCount(userId: string, withinMinutes = 15): number {
+    if (!this.data.password_reset_tokens) return 0;
+    const cutoff = Date.now() - withinMinutes * 60 * 1000;
+    return this.data.password_reset_tokens.filter(
+      t => t.user_id === userId && new Date(t.created_at).getTime() > cutoff
+    ).length;
   }
 
   public createUser(user: User): User {
@@ -1587,3 +1682,4 @@ class Database {
 }
 
 export const db = new Database();
+

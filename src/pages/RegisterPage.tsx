@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, ArrowRight, Building2, User, Mail, Phone, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../i18n/LanguageContext';
+import type { SupportedLocale } from '../types';
+import { Sparkles, ArrowRight, ArrowLeft, Building2, User, Mail, Phone, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { t, locale, setLocale, isRtl } = useLanguage();
 
   const [formData, setFormData] = useState({
     nom_entreprise: '',
@@ -17,6 +20,9 @@ export const RegisterPage: React.FC = () => {
     confirm_password: '',
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,33 +31,39 @@ export const RegisterPage: React.FC = () => {
     setError(null);
 
     if (formData.password !== formData.confirm_password) {
-      setError('Les mots de passe ne correspondent pas.');
+      setError(t.auth.passwordMismatch);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Le mot de passe doit comporter au moins 6 caractères.');
+      setError(t.auth.passwordMinLength);
       return;
     }
 
     try {
       setLoading(true);
       await register(formData);
-      // Auto-connect and redirect to /entreprise
       navigate('/entreprise');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Une erreur est survenue lors de l\'inscription.';
+      const msg = err instanceof Error ? err.message : t.common.error;
       setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
+  const inputPadding = isRtl
+    ? '0.65rem 2.25rem 0.65rem 0.85rem'
+    : '0.65rem 0.85rem 0.65rem 2.25rem';
+  const iconStyle = isRtl
+    ? { position: 'absolute' as const, right: '12px', top: '50%', transform: 'translateY(-50%)' }
+    : { position: 'absolute' as const, left: '12px', top: '50%', transform: 'translateY(-50%)' };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)' }}>
       {/* Top Simple Header */}
       <header style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(12px)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
           <Link to="/" className="brand-logo-link">
             <div className="brand-logo-icon" style={{ width: '32px', height: '32px' }}>
               <Sparkles size={18} />
@@ -59,11 +71,46 @@ export const RegisterPage: React.FC = () => {
             <span className="brand-logo-text" style={{ fontSize: '1.15rem' }}>Relancio</span>
             <span className="brand-logo-tag" style={{ padding: '0.15rem 0.5rem', fontSize: '0.7rem' }}>SaaS</span>
           </Link>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Déjà un compte ?{' '}
-            <Link to="/connexion" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
-              Se connecter
-            </Link>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {/* Language Switcher */}
+            <div
+              style={{
+                display: 'inline-flex',
+                background: 'rgba(255, 255, 255, 0.05)',
+                padding: '2px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              {(['fr', 'en', 'ar'] as SupportedLocale[]).map(lang => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => setLocale(lang)}
+                  style={{
+                    padding: '0.2rem 0.5rem',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: locale === lang ? 'var(--primary)' : 'transparent',
+                    color: locale === lang ? '#0b0f19' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              {t.auth.alreadyAccount}{' '}
+              <Link to="/connexion" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
+                {t.auth.signIn}
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -84,13 +131,13 @@ export const RegisterPage: React.FC = () => {
           <div style={{ textAlign: 'center', marginBottom: '1.15rem' }}>
             <div className="badge-pill" style={{ marginBottom: '0.5rem', padding: '0.2rem 0.65rem', fontSize: '0.75rem' }}>
               <Building2 size={13} />
-              <span>Création de compte Entreprise</span>
+              <span>{t.auth.registerBadge}</span>
             </div>
             <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'white', marginBottom: '0.25rem' }}>
-              Commencer avec Relancio
+              {t.auth.registerTitle}
             </h1>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-              Enregistrez vos créances et facilitez les paiements de vos clients dès aujourd'hui.
+              {t.auth.registerSubtitle}
             </p>
           </div>
 
@@ -119,22 +166,22 @@ export const RegisterPage: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Nom de l'entreprise *
+                  {t.auth.companyName} *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Building2 size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Building2 size={15} color="#64748b" style={iconStyle} />
                   <input
                     type="text"
                     required
                     value={formData.nom_entreprise}
                     onChange={e => setFormData({ ...formData, nom_entreprise: e.target.value })}
-                    placeholder="Ex: Pressing Moderne Dakar"
+                    placeholder={locale === 'ar' ? 'مثال: مغسلة السلام النموذجية' : 'Ex: Pressing Moderne Dakar'}
                     style={{
                       width: '100%',
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                      padding: inputPadding,
                       color: 'white',
                       fontSize: '0.88rem',
                       outline: 'none',
@@ -145,22 +192,22 @@ export const RegisterPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Nom du responsable *
+                  {t.auth.fullName} *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <User size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <User size={15} color="#64748b" style={iconStyle} />
                   <input
                     type="text"
                     required
                     value={formData.responsable}
                     onChange={e => setFormData({ ...formData, responsable: e.target.value })}
-                    placeholder="Ex: Amadou Diallo"
+                    placeholder={locale === 'ar' ? 'مثال: أحمد المنصوري' : 'Ex: Amadou Diallo'}
                     style={{
                       width: '100%',
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                      padding: inputPadding,
                       color: 'white',
                       fontSize: '0.88rem',
                       outline: 'none',
@@ -174,10 +221,10 @@ export const RegisterPage: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Email professionnel *
+                  {t.settings.professionalEmail} *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Mail size={15} color="#64748b" style={iconStyle} />
                   <input
                     type="email"
                     required
@@ -189,10 +236,12 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                      padding: inputPadding,
                       color: 'white',
                       fontSize: '0.88rem',
                       outline: 'none',
+                      direction: 'ltr',
+                      textAlign: isRtl ? 'right' : 'left',
                     }}
                   />
                 </div>
@@ -200,10 +249,10 @@ export const RegisterPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Téléphone / WhatsApp *
+                  {t.auth.phone} *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Phone size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Phone size={15} color="#64748b" style={iconStyle} />
                   <input
                     type="tel"
                     required
@@ -215,10 +264,12 @@ export const RegisterPage: React.FC = () => {
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                      padding: inputPadding,
                       color: 'white',
                       fontSize: '0.88rem',
                       outline: 'none',
+                      direction: 'ltr',
+                      textAlign: isRtl ? 'right' : 'left',
                     }}
                   />
                 </div>
@@ -228,7 +279,7 @@ export const RegisterPage: React.FC = () => {
             {/* Secteur d'activité */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                Secteur d'activité principal *
+                {t.auth.sector} *
               </label>
               <select
                 value={formData.secteur}
@@ -245,14 +296,14 @@ export const RegisterPage: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                <option value="Pressing">Pressing & Blanchisserie</option>
-                <option value="École">École & Éducation</option>
-                <option value="Garage">Garage & Réparation Auto</option>
-                <option value="Salon">Salon de coiffure & Beauté</option>
-                <option value="Commerce">Commerce & Vente de détail</option>
-                <option value="Artisan">Artisan & BTP</option>
-                <option value="Services">Entreprise de services & Conseil</option>
-                <option value="Autre">Autre activité professionnelle</option>
+                <option value="Pressing">{t.auth.sectors.pressing}</option>
+                <option value="École">{t.auth.sectors.ecole}</option>
+                <option value="Garage">{t.auth.sectors.garage}</option>
+                <option value="Salon">{t.auth.sectors.salon}</option>
+                <option value="Commerce">{t.auth.sectors.commerce}</option>
+                <option value="Artisan">{t.auth.sectors.artisan}</option>
+                <option value="Services">{t.auth.sectors.services}</option>
+                <option value="Autre">{t.auth.sectors.autre}</option>
               </select>
             </div>
 
@@ -260,53 +311,99 @@ export const RegisterPage: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Mot de passe *
+                  {t.auth.password} *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Lock size={15} color="#64748b" style={iconStyle} />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={formData.password}
                     onChange={e => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Au moins 6 caractères"
+                    placeholder={locale === 'ar' ? '6 أحرف على الأقل' : 'Au moins 6 caractères'}
                     style={{
                       width: '100%',
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                      padding: '0.65rem 2.25rem',
                       color: 'white',
                       fontSize: '0.88rem',
                       outline: 'none',
+                      direction: 'ltr',
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    title={showPassword ? 'Masquer' : 'Afficher'}
+                    style={{
+                      position: 'absolute',
+                      [isRtl ? 'left' : 'right']: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: showPassword ? 'var(--primary)' : '#64748b',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Confirmer le mot de passe *
+                  {t.auth.confirmPassword} *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Lock size={15} color="#64748b" style={iconStyle} />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
                     value={formData.confirm_password}
                     onChange={e => setFormData({ ...formData, confirm_password: e.target.value })}
-                    placeholder="Répétez le mot de passe"
+                    placeholder={locale === 'ar' ? 'كرر كلمة المرور' : 'Répétez le mot de passe'}
                     style={{
                       width: '100%',
                       background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                      padding: '0.65rem 2.25rem',
                       color: 'white',
                       fontSize: '0.88rem',
                       outline: 'none',
+                      direction: 'ltr',
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(prev => !prev)}
+                    aria-label={showConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    title={showConfirmPassword ? 'Masquer' : 'Afficher'}
+                    style={{
+                      position: 'absolute',
+                      [isRtl ? 'left' : 'right']: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: showConfirmPassword ? 'var(--primary)' : '#64748b',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                    }}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
             </div>
@@ -319,11 +416,11 @@ export const RegisterPage: React.FC = () => {
               style={{ marginTop: '0.35rem', width: '100%', padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
             >
               {loading ? (
-                <span>Création du compte en cours...</span>
+                <span>{t.auth.creatingAccount}</span>
               ) : (
                 <>
-                  <span>Créer mon compte entreprise</span>
-                  <ArrowRight size={16} />
+                  <span>{t.auth.registerBtn}</span>
+                  {isRtl ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
                 </>
               )}
             </button>
@@ -345,15 +442,15 @@ export const RegisterPage: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
               <CheckCircle2 size={13} color="var(--primary)" />
-              <span>0€ d'abonnement obligatoire</span>
+              <span>{t.auth.guaranteeNoSubscription}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
               <CheckCircle2 size={13} color="var(--primary)" />
-              <span>Données isolées et sécurisées</span>
+              <span>{t.auth.guaranteeSecure}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
               <CheckCircle2 size={13} color="var(--primary)" />
-              <span>Accès immédiat</span>
+              <span>{t.auth.guaranteeInstantAccess}</span>
             </div>
           </div>
         </div>

@@ -41,6 +41,11 @@ app.use('/api/company', companyRouter);
 app.use('/api/entreprise', companyRouter);
 app.use('/api/admin', adminRouter);
 
+// 404 handler for API routes - garantit que toutes les requêtes /api retournent du JSON (compatible Express 5)
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Endpoint API introuvable' });
+});
+
 // Global Error Handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Server error:', err);

@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, ArrowRight, Mail, Lock, AlertCircle, ShieldCheck, Key } from 'lucide-react';
+import { useLanguage } from '../i18n/LanguageContext';
+import type { SupportedLocale } from '../types';
+import { Sparkles, ArrowRight, Mail, Lock, AlertCircle, ShieldCheck, Key, Globe, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, login } = useAuth();
+  const { t, locale, setLocale, isRTL } = useLanguage();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,14 +33,15 @@ export const LoginPage: React.FC = () => {
 
     try {
       setLoading(true);
-      const loggedInUser = await login(email, password);
+      const cleanIdentifier = email.trim();
+      const loggedInUser = await login(cleanIdentifier, password);
       if (loggedInUser.role === 'SUPER_ADMIN') {
         navigate('/admin', { replace: true });
       } else {
         navigate('/entreprise', { replace: true });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Identifiants invalides ou compte inaccessible.';
+      const msg = err instanceof Error ? err.message : t.common.error;
       setError(msg);
     } finally {
       setLoading(false);
@@ -60,11 +65,35 @@ export const LoginPage: React.FC = () => {
             <span className="brand-logo-text" style={{ fontSize: '1.15rem' }}>Relancio</span>
             <span className="brand-logo-tag" style={{ padding: '0.15rem 0.5rem', fontSize: '0.7rem' }}>SaaS</span>
           </Link>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Pas encore de compte ?{' '}
-            <Link to="/inscription" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
-              Créer un compte
-            </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.45rem', borderRadius: '6px' }}>
+              <Globe size={13} color="var(--text-muted)" />
+              {(['fr', 'en', 'ar'] as SupportedLocale[]).map(l => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLocale(l)}
+                  style={{
+                    background: locale === l ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
+                    border: locale === l ? '1px solid #10b981' : '1px solid transparent',
+                    borderRadius: '4px',
+                    color: locale === l ? 'white' : 'var(--text-muted)',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '0.15rem 0.4rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              {t.auth.noAccount}{' '}
+              <Link to="/inscription" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
+                {t.auth.signUp}
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -100,10 +129,10 @@ export const LoginPage: React.FC = () => {
               <Key size={20} />
             </div>
             <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'white', marginBottom: '0.25rem' }}>
-              Connexion Entreprise
+              {t.auth.loginTitle}
             </h1>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-              Accédez directement à votre tableau de bord
+              {t.auth.loginSubtitle}
             </p>
           </div>
 
@@ -130,22 +159,22 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                Email de connexion
+                {t.auth.emailOrPhone}
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <Mail size={15} color="#64748b" style={{ position: 'absolute', [isRTL ? 'right' : 'left']: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="contact@entreprise.com"
+                  placeholder={locale === 'ar' ? 'البريد أو الهاتف' : '+225 07... ou contact@entreprise.com'}
                   style={{
                     width: '100%',
                     background: 'rgba(255, 255, 255, 0.04)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-md)',
-                    padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                    padding: isRTL ? '0.65rem 2.25rem 0.65rem 0.85rem' : '0.65rem 0.85rem 0.65rem 2.25rem',
                     color: 'white',
                     fontSize: '0.88rem',
                     outline: 'none',
@@ -155,13 +184,26 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                Mot de passe
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  {t.auth.password}
+                </label>
+                <Link
+                  to="/mot-de-passe-oublie"
+                  style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--primary)',
+                    textDecoration: 'none',
+                    fontWeight: 500,
+                  }}
+                >
+                  {t.auth.forgotPassword}
+                </Link>
+              </div>
               <div style={{ position: 'relative' }}>
-                <Lock size={15} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <Lock size={15} color="#64748b" style={{ position: 'absolute', [isRTL ? 'right' : 'left']: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -171,12 +213,35 @@ export const LoginPage: React.FC = () => {
                     background: 'rgba(255, 255, 255, 0.04)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-md)',
-                    padding: '0.65rem 0.85rem 0.65rem 2.25rem',
+                    padding: isRTL ? '0.65rem 2.25rem 0.65rem 2.25rem' : '0.65rem 2.25rem 0.65rem 2.25rem',
                     color: 'white',
                     fontSize: '0.88rem',
                     outline: 'none',
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  title={showPassword ? 'Masquer' : 'Afficher'}
+                  style={{
+                    position: 'absolute',
+                    [isRTL ? 'left' : 'right']: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: showPassword ? 'var(--primary)' : '#64748b',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px',
+                    borderRadius: '4px',
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
@@ -187,11 +252,11 @@ export const LoginPage: React.FC = () => {
               style={{ marginTop: '0.35rem', width: '100%', padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
             >
               {loading ? (
-                <span>Connexion en cours...</span>
+                <span>{t.common.loading}</span>
               ) : (
                 <>
-                  <span>Accéder à mon espace</span>
-                  <ArrowRight size={16} />
+                  <span>{t.auth.loginBtn}</span>
+                  <ArrowRight size={16} style={{ transform: isRTL ? 'rotate(180deg)' : 'none' }} />
                 </>
               )}
             </button>
@@ -208,7 +273,7 @@ export const LoginPage: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '0.45rem', fontWeight: 600 }}>
-              💡 Accès de test pré-configurés (1 clic) :
+              💡 {t.auth.demoAccounts} :
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(115px, 1fr))', gap: '0.45rem' }}>
               <button
@@ -223,12 +288,12 @@ export const LoginPage: React.FC = () => {
                   fontSize: '0.74rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  textAlign: 'left',
+                  textAlign: isRTL ? 'right' : 'left',
                   lineHeight: 1.2,
                 }}
               >
                 👔 <strong>Royal Clean</strong>
-                <span style={{ display: 'block', fontSize: '0.68rem', opacity: 0.8 }}>Entreprise A</span>
+                <span style={{ display: 'block', fontSize: '0.68rem', opacity: 0.8 }}>Pressing A</span>
               </button>
               <button
                 type="button"
@@ -242,12 +307,12 @@ export const LoginPage: React.FC = () => {
                   fontSize: '0.74rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  textAlign: 'left',
+                  textAlign: isRTL ? 'right' : 'left',
                   lineHeight: 1.2,
                 }}
               >
                 🎓 <strong>Les Étoiles</strong>
-                <span style={{ display: 'block', fontSize: '0.68rem', opacity: 0.8 }}>Entreprise B</span>
+                <span style={{ display: 'block', fontSize: '0.68rem', opacity: 0.8 }}>École B</span>
               </button>
               <button
                 type="button"
@@ -261,19 +326,19 @@ export const LoginPage: React.FC = () => {
                   fontSize: '0.74rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  textAlign: 'left',
+                  textAlign: isRTL ? 'right' : 'left',
                   lineHeight: 1.2,
                 }}
               >
                 🛡️ <strong>Super Admin</strong>
-                <span style={{ display: 'block', fontSize: '0.68rem', opacity: 0.8 }}>Console Globale</span>
+                <span style={{ display: 'block', fontSize: '0.68rem', opacity: 0.8 }}>Console</span>
               </button>
             </div>
           </div>
 
           <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-            <ShieldCheck size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-            Session sécurisée avec isolation cryptographique
+            <ShieldCheck size={13} style={{ display: 'inline', marginInlineEnd: '4px', verticalAlign: 'middle' }} />
+            {t.auth.sessionEncrypted}
           </div>
         </div>
       </main>

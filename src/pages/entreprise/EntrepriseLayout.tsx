@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
+import type { SupportedLocale } from '../../types';
 import {
   LayoutDashboard,
   Users,
@@ -15,10 +17,12 @@ import {
   Sparkles,
   ShieldCheck,
   Link2,
+  Globe,
 } from 'lucide-react';
 
 export const EntrepriseLayout: React.FC = () => {
   const { user, company, isAuthenticated, isLoading, logout } = useAuth();
+  const { t, locale, setLocale, isRTL } = useLanguage();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -27,7 +31,7 @@ export const EntrepriseLayout: React.FC = () => {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-main)', color: 'white' }}>
         <div style={{ textAlign: 'center' }}>
           <Sparkles className="animate-badge" size={36} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
-          <div style={{ fontSize: '1rem', fontWeight: 600 }}>Chargement de votre espace sécurisé...</div>
+          <div style={{ fontSize: '1rem', fontWeight: 600 }}>{t.layout.loadingWorkspace}</div>
         </div>
       </div>
     );
@@ -38,13 +42,13 @@ export const EntrepriseLayout: React.FC = () => {
   }
 
   const navItems = [
-    { label: 'Tableau de bord', path: '/entreprise', icon: <LayoutDashboard size={18} /> },
-    { label: 'Clients', path: '/entreprise/clients', icon: <Users size={18} /> },
-    { label: 'Créances', path: '/entreprise/creances', icon: <FileText size={18} /> },
-    { label: 'Liens de paiement', path: '/entreprise/demandes-paiement', icon: <Link2 size={18} /> },
-    { label: 'Paiements', path: '/entreprise/paiements', icon: <CreditCard size={18} /> },
-    { label: 'Relances', path: '/entreprise/relances', icon: <BellRing size={18} /> },
-    { label: 'Paramètres', path: '/entreprise/parametres', icon: <Settings size={18} /> },
+    { label: t.layout.dashboard, path: '/entreprise', icon: <LayoutDashboard size={18} /> },
+    { label: t.layout.clients, path: '/entreprise/clients', icon: <Users size={18} /> },
+    { label: t.layout.creances, path: '/entreprise/creances', icon: <FileText size={18} /> },
+    { label: t.layout.paymentLinks, path: '/entreprise/demandes-paiement', icon: <Link2 size={18} /> },
+    { label: t.layout.payments, path: '/entreprise/paiements', icon: <CreditCard size={18} /> },
+    { label: t.layout.reminders, path: '/entreprise/relances', icon: <BellRing size={18} /> },
+    { label: t.layout.settings, path: '/entreprise/parametres', icon: <Settings size={18} /> },
   ];
 
   const handleLogout = () => {
@@ -60,7 +64,8 @@ export const EntrepriseLayout: React.FC = () => {
         style={{
           width: '260px',
           background: 'var(--bg-surface)',
-          borderRight: '1px solid var(--border-subtle)',
+          borderRight: isRTL ? 'none' : '1px solid var(--border-subtle)',
+          borderLeft: isRTL ? '1px solid var(--border-subtle)' : 'none',
           display: 'none',
           flexDirection: 'column',
           position: 'sticky',
@@ -95,7 +100,7 @@ export const EntrepriseLayout: React.FC = () => {
             </div>
             <div style={{ overflow: 'hidden' }}>
               <div style={{ fontWeight: 800, color: 'white', fontSize: '0.92rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                {company?.nom || 'Mon Entreprise'}
+                {company?.nom || t.layout.myCompany}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 {company?.secteur || 'Entreprise'}
@@ -105,7 +110,7 @@ export const EntrepriseLayout: React.FC = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.1)', padding: '0.15rem 0.45rem', borderRadius: '4px', width: 'fit-content' }}>
             <ShieldCheck size={11} />
-            <span>Espace Isolé</span>
+            <span>{t.layout.isolatedTenant}</span>
           </div>
         </div>
 
@@ -139,6 +144,36 @@ export const EntrepriseLayout: React.FC = () => {
           })}
         </nav>
 
+        {/* Language switcher */}
+        <div style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.15)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            <Globe size={13} />
+            <span>{t.layout.switchLang}</span>
+          </span>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            {(['fr', 'en', 'ar'] as SupportedLocale[]).map(l => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLocale(l)}
+                style={{
+                  padding: '0.2rem 0.45rem',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  borderRadius: '4px',
+                  border: '1px solid',
+                  borderColor: locale === l ? primaryColor : 'var(--border-subtle)',
+                  background: locale === l ? `${primaryColor}25` : 'transparent',
+                  color: locale === l ? 'white' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                }}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* User profile & Logout */}
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
@@ -171,7 +206,7 @@ export const EntrepriseLayout: React.FC = () => {
             }}
           >
             <LogOut size={14} />
-            <span>Déconnexion</span>
+            <span>{t.layout.logout}</span>
           </button>
         </div>
       </aside>
@@ -215,6 +250,30 @@ export const EntrepriseLayout: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            {/* Mobile Lang Selector */}
+            <div style={{ display: 'flex', gap: '0.2rem' }}>
+              {(['fr', 'en', 'ar'] as SupportedLocale[]).map(l => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLocale(l)}
+                  style={{
+                    padding: '0.2rem 0.4rem',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    borderColor: locale === l ? primaryColor : 'var(--border-subtle)',
+                    background: locale === l ? `${primaryColor}30` : 'transparent',
+                    color: locale === l ? 'white' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
             <button
               type="button"
               onClick={() => setMobileNavOpen(!mobileNavOpen)}
@@ -299,7 +358,7 @@ export const EntrepriseLayout: React.FC = () => {
               }}
             >
               <LogOut size={16} />
-              <span>Se déconnecter</span>
+              <span>{t.layout.logout}</span>
             </button>
           </div>
         )}

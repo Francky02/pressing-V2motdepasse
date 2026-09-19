@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   Upload,
   Trash2,
@@ -16,6 +17,7 @@ import {
 
 export const EntrepriseSettings: React.FC = () => {
   const { company, updateCompanyProfile, deleteCompanyLogo } = useAuth();
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -72,10 +74,10 @@ export const EntrepriseSettings: React.FC = () => {
     try {
       await deleteCompanyLogo();
       setFormData(prev => ({ ...prev, logo: null }));
-      setSuccessMessage('Logo supprimé avec succès.');
+      setSuccessMessage(t.settings.logoDeletedSuccess);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch {
-      setErrorMessage('Erreur lors de la suppression du logo.');
+      setErrorMessage(t.settings.saveError);
     }
   };
 
@@ -94,14 +96,14 @@ export const EntrepriseSettings: React.FC = () => {
     try {
       await updateCompanyProfile(formData);
       setSaveStatus('success');
-      setSuccessMessage('Modifications enregistrées avec succès.');
+      setSuccessMessage(t.settings.savedSuccess);
       resetTimerRef.current = setTimeout(() => {
         setSaveStatus('idle');
         setSuccessMessage(null);
       }, 3000);
     } catch (err: unknown) {
       setSaveStatus('error');
-      const msg = err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement';
+      const msg = err instanceof Error ? err.message : t.settings.saveError;
       setErrorMessage(msg);
       resetTimerRef.current = setTimeout(() => {
         setSaveStatus('idle');
@@ -115,28 +117,28 @@ export const EntrepriseSettings: React.FC = () => {
         return (
           <>
             <RefreshCw size={14} className="animate-spin" />
-            <span>Enregistrement...</span>
+            <span>{t.common.saving}</span>
           </>
         );
       case 'success':
         return (
           <>
             <CheckCircle2 size={14} />
-            <span>Modifications enregistrées avec succès.</span>
+            <span>{t.settings.savedSuccess}</span>
           </>
         );
       case 'error':
         return (
           <>
             <AlertCircle size={14} />
-            <span>Erreur lors de l'enregistrement</span>
+            <span>{t.settings.saveError}</span>
           </>
         );
       default:
         return (
           <>
             <Save size={14} />
-            <span>Enregistrer</span>
+            <span>{t.settings.saveChanges}</span>
           </>
         );
     }
@@ -171,7 +173,7 @@ export const EntrepriseSettings: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1350px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-      {/* Top Header avec bouton Enregistrer accessible immédiatement */}
+      {/* Top Header */}
       <div
         style={{
           background: 'var(--bg-surface)',
@@ -191,17 +193,17 @@ export const EntrepriseSettings: React.FC = () => {
           </div>
           <div>
             <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-              Paramètres de l'Entreprise
+              {t.settings.title}
             </h1>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Identité visuelle, logo, coordonnées affichés sur vos reçus et liens de paiement
+              {t.settings.subtitle}
             </div>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={handleSave}
+          onClick={() => handleSave()}
           disabled={saveStatus === 'saving'}
           className="btn btn-primary btn-sm"
           style={{
@@ -267,7 +269,7 @@ export const EntrepriseSettings: React.FC = () => {
           alignItems: 'start',
         }}
       >
-        {/* Left Form (Compact Groupings) */}
+        {/* Left Form */}
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           {/* Box 1: Logo & Couleurs */}
           <div
@@ -283,7 +285,7 @@ export const EntrepriseSettings: React.FC = () => {
           >
             <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Palette size={15} color={formData.couleur_principale} />
-              <span>Logo & Couleurs de marque</span>
+              <span>{t.settings.branding}</span>
             </div>
 
             {/* Logo row */}
@@ -327,7 +329,7 @@ export const EntrepriseSettings: React.FC = () => {
                     style={{ fontSize: '0.74rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                   >
                     <Upload size={12} />
-                    <span>{formData.logo ? 'Remplacer' : 'Importer un logo'}</span>
+                    <span>{formData.logo ? t.settings.changeLogo : t.settings.uploadLogo}</span>
                   </button>
 
                   {formData.logo && (
@@ -336,6 +338,7 @@ export const EntrepriseSettings: React.FC = () => {
                       onClick={handleRemoveLogo}
                       className="btn btn-secondary btn-sm"
                       style={{ color: '#fb7185', fontSize: '0.74rem', padding: '0.3rem 0.6rem' }}
+                      title={t.settings.deleteLogo}
                     >
                       <Trash2 size={12} />
                     </button>
@@ -349,7 +352,7 @@ export const EntrepriseSettings: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-subtle)' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Couleur principale
+                  {t.settings.primaryColor}
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                   {presetColors.slice(0, 4).map(col => (
@@ -381,7 +384,7 @@ export const EntrepriseSettings: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Couleur secondaire
+                  {t.settings.secondaryColor}
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <input
@@ -398,7 +401,7 @@ export const EntrepriseSettings: React.FC = () => {
             </div>
           </div>
 
-          {/* Box 2: Coordonnées de l'entreprise (2-column grid on desktop) */}
+          {/* Box 2: Coordonnées de l'entreprise */}
           <div
             style={{
               background: 'var(--bg-surface)',
@@ -411,14 +414,14 @@ export const EntrepriseSettings: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'white' }}>
-              Coordonnées de l'entreprise
+              {t.settings.companyInfo}
             </div>
 
             {/* Nom & Secteur */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Nom commercial *
+                  {t.settings.companyName} *
                 </label>
                 <input
                   type="text"
@@ -440,7 +443,7 @@ export const EntrepriseSettings: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Secteur d'activité *
+                  {t.settings.sector} *
                 </label>
                 <select
                   value={formData.secteur}
@@ -473,7 +476,7 @@ export const EntrepriseSettings: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Nom du responsable
+                  {t.settings.managerName}
                 </label>
                 <input
                   type="text"
@@ -494,7 +497,7 @@ export const EntrepriseSettings: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Téléphone / WhatsApp
+                  {t.settings.phoneWhatsApp}
                 </label>
                 <input
                   type="text"
@@ -518,7 +521,7 @@ export const EntrepriseSettings: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Email de facturation
+                  {t.settings.professionalEmail}
                 </label>
                 <input
                   type="email"
@@ -539,7 +542,7 @@ export const EntrepriseSettings: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                  Adresse physique
+                  {t.settings.address}
                 </label>
                 <input
                   type="text"
@@ -596,7 +599,7 @@ export const EntrepriseSettings: React.FC = () => {
           }}
         >
           <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Aperçu en temps réel
+            {t.customization.previewNote}
           </div>
 
           <div
@@ -631,7 +634,7 @@ export const EntrepriseSettings: React.FC = () => {
               </div>
               <div>
                 <div style={{ fontWeight: 800, color: 'white', fontSize: '0.95rem' }}>
-                  {formData.nom || 'Nom de votre entreprise'}
+                  {formData.nom || t.settings.companyName}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                   {formData.secteur}
@@ -672,7 +675,7 @@ export const EntrepriseSettings: React.FC = () => {
                 textAlign: 'center',
               }}
             >
-              Bouton personnalisé client
+              {t.publicPayment.payNow}
             </div>
           </div>
         </div>

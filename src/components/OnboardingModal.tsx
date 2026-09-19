@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
+import { X, CheckCircle2, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface OnboardingModalProps {
 }
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) => {
+  const { t, locale, isRtl } = useLanguage();
+
   const [step, setStep] = useState(1);
   const [businessName, setBusinessName] = useState('');
   const [sector, setSector] = useState('pressing');
@@ -51,7 +54,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
           style={{
             position: 'absolute',
             top: '1.25rem',
-            right: '1.25rem',
+            ...(isRtl ? { left: '1.25rem' } : { right: '1.25rem' }),
             background: 'transparent',
             border: 'none',
             color: 'var(--text-secondary)',
@@ -65,17 +68,19 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
         <div style={{ marginBottom: '1.5rem' }}>
           <div className="badge-pill" style={{ marginBottom: '0.5rem' }}>
             <Sparkles size={14} />
-            <span>Étape {step} sur 3 • Configuration Express</span>
+            <span>
+              {t.auth.onboardingStep} {step} {t.auth.onboardingOf} 3 • {t.auth.expressConfig}
+            </span>
           </div>
           <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'white' }}>
-            {step === 1 && "Créez votre profil d'entreprise"}
-            {step === 2 && "Enregistrez votre première créance"}
-            {step === 3 && "Votre lien de paiement est prêt !"}
+            {step === 1 && t.auth.step1Title}
+            {step === 2 && t.auth.step2Title}
+            {step === 3 && t.auth.step3Title}
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            {step === 1 && "Personnalisez votre espace Relancio en moins d'une minute."}
-            {step === 2 && "Saisissez ce qu'un client vous doit pour tester l'encaissement."}
-            {step === 3 && "Votre client recevra ce lien direct pour vous régler en toute sécurité."}
+            {step === 1 && t.auth.step1Subtitle}
+            {step === 2 && t.auth.step2Subtitle}
+            {step === 3 && t.auth.step3Subtitle}
           </p>
         </div>
 
@@ -84,13 +89,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                Nom commercial de votre entreprise
+                {t.auth.companyName}
               </label>
               <input
                 type="text"
                 value={businessName}
                 onChange={e => setBusinessName(e.target.value)}
-                placeholder="Ex: Pressing Moderne Dakar, Garage Rapide..."
+                placeholder={locale === 'ar' ? 'مثال: مغسلة السلام النموذجية، كراج الصيانة السريعة...' : 'Ex: Pressing Moderne Dakar, Garage Rapide...'}
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -106,7 +111,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
 
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                Secteur d'activité principal
+                {t.auth.sector}
               </label>
               <select
                 value={sector}
@@ -120,16 +125,17 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
                   color: 'white',
                   fontSize: '0.95rem',
                   outline: 'none',
+                  cursor: 'pointer',
                 }}
               >
-                <option value="pressing">Pressing & Blanchisserie</option>
-                <option value="ecole">École & Établissement scolaire</option>
-                <option value="garage">Garage & Mécanique Automobile</option>
-                <option value="salon">Salon de coiffure & Beauté</option>
-                <option value="commerce">Boutique & Commerce</option>
-                <option value="artisan">Artisan & BTP</option>
-                <option value="services">Entreprise de services & Conseil</option>
-                <option value="autre">Autre profession</option>
+                <option value="pressing">{t.auth.sectors.pressing}</option>
+                <option value="ecole">{t.auth.sectors.ecole}</option>
+                <option value="garage">{t.auth.sectors.garage}</option>
+                <option value="salon">{t.auth.sectors.salon}</option>
+                <option value="commerce">{t.auth.sectors.commerce}</option>
+                <option value="artisan">{t.auth.sectors.artisan}</option>
+                <option value="services">{t.auth.sectors.services}</option>
+                <option value="autre">{t.auth.sectors.autre}</option>
               </select>
             </div>
           </div>
@@ -139,13 +145,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                Nom du client
+                {t.clients.name}
               </label>
               <input
                 type="text"
                 value={clientName}
                 onChange={e => setClientName(e.target.value)}
-                placeholder="Ex: M. Diallo, Entreprise SOGEP..."
+                placeholder={locale === 'ar' ? 'مثال: السيد خالد، شركة الأمل...' : 'Ex: M. Diallo, Entreprise SOGEP...'}
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -162,7 +168,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                  Numéro WhatsApp
+                  {t.common.phone}
                 </label>
                 <input
                   type="text"
@@ -178,13 +184,15 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
                     color: 'white',
                     fontSize: '0.95rem',
                     outline: 'none',
+                    direction: 'ltr',
+                    textAlign: isRtl ? 'right' : 'left',
                   }}
                 />
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                  Montant dû (FCFA)
+                  {t.common.amount} ({t.common.currency})
                 </label>
                 <input
                   type="number"
@@ -199,6 +207,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
                     color: 'white',
                     fontSize: '0.95rem',
                     outline: 'none',
+                    direction: 'ltr',
                   }}
                 />
               </div>
@@ -206,13 +215,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
 
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
-                Motif de la dette
+                {t.creances.motif}
               </label>
               <input
                 type="text"
                 value={motif}
                 onChange={e => setMotif(e.target.value)}
-                placeholder="Ex: Solde linge pressing, Frais scolarité, Réparation..."
+                placeholder={locale === 'ar' ? 'مثال: متبقي فاتورة الملابس، رسوم تدريب، صيانة...' : 'Ex: Solde linge pressing, Frais scolarité, Réparation...'}
                 style={{
                   width: '100%',
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -247,17 +256,21 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
             </div>
 
             <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.3rem' }}>Lien de paiement généré :</div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.3rem' }}>
+                {t.demandes.createdModalSubtitle}
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary)', fontFamily: 'monospace', direction: 'ltr' }}>
                 pay.relancio.com/l/{linkToken}
               </div>
               <div style={{ fontSize: '0.8rem', color: 'white', marginTop: '0.5rem' }}>
-                Pour {clientName || 'M. Kouassi'} • {parseInt(amount || '50000').toLocaleString()} FCFA
+                {locale === 'ar'
+                  ? `للعميل ${clientName || 'السيد كواسي'} • ${parseInt(amount || '50000').toLocaleString('ar-EG')} ${t.common.currency}`
+                  : `Pour ${clientName || 'M. Kouassi'} • ${parseInt(amount || '50000').toLocaleString('fr-FR')} ${t.common.currency}`}
               </div>
             </div>
 
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              En validant, vous accédez à votre tableau de bord interactif pour suivre les règlements en direct.
+              {t.demandes.directLinkNotice}
             </p>
           </div>
         )}
@@ -270,7 +283,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
               className="btn btn-secondary btn-sm"
               onClick={() => setStep(step - 1)}
             >
-              Précédent
+              {t.auth.previous}
             </button>
           ) : <div />}
 
@@ -279,8 +292,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
             className="btn btn-primary btn-glow"
             onClick={handleNext}
           >
-            <span>{step === 3 ? "Finaliser et ouvrir mon espace" : "Continuer"}</span>
-            <ArrowRight size={16} />
+            <span>{step === 3 ? t.auth.finishOnboarding : t.auth.next}</span>
+            {isRtl ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
           </button>
         </div>
       </div>

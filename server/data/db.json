@@ -59,6 +59,18 @@
       "actif": true,
       "created_at": "2026-09-16T00:35:09.739Z",
       "updated_at": "2026-09-16T00:35:09.739Z"
+    },
+    {
+      "id": "usr-test-recov-1789859515503",
+      "entreprise_id": null,
+      "nom": "Utilisateur Audit Récupération",
+      "email": "test-recov-1789859515503@relancio-audit.ci",
+      "telephone": "+225 01 02 03 04",
+      "password_hash": "$2b$10$h7kIKtzFgkdBbOUwrr0KVe2he6NnMxlbGA2Mzvtcsb4tLFG4qPSZG",
+      "role": "ENTREPRISE_ADMIN",
+      "actif": true,
+      "created_at": "2026-09-19T23:11:55.599Z",
+      "updated_at": "2026-09-19T23:11:55.755Z"
     }
   ],
   "entreprises": [
@@ -1356,7 +1368,7 @@
       "client_telephone": "+221 77 123 45 67",
       "montant": 150000,
       "motif": "Frais de scolarité Trimestre 2 - Classe 3ème B",
-      "statut": "en_attente",
+      "statut": "en_retard",
       "echeance": "2026-09-18",
       "created_at": "2026-09-16T00:23:43.451Z",
       "montant_total": 150000,
@@ -1920,6 +1932,23 @@
   ],
   "relances_logs": [
     {
+      "id": "rel-f8xyxc3",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "creance_id": "cre-06rr6b5",
+      "client_id": "cli-kgpc2xk",
+      "client_nom": "nzi amenan nadege",
+      "client_telephone": "0170993197",
+      "telephone_normalise": "2250170993197",
+      "type": "manuel",
+      "milestone": "manuel",
+      "montant_solde": 50000,
+      "montant_total": 50000,
+      "statut": "envoye",
+      "message": "Bonjour nzi amenan nadege, nous vous rappelons amicalement que votre facture pour \"Prestation de service\" (solde de 50 000 FCFA) arrive à échéance le 2026-09-24. Merci de préparer votre règlement. Bien cordialement, pressing canaan.",
+      "canal": "whatsapp",
+      "created_at": "2026-09-19T22:57:55.085Z"
+    },
+    {
       "id": "rel-6lfmdd4",
       "entreprise_id": "ent-1789518909739-s7z1",
       "creance_id": "cre-06rr6b5",
@@ -2160,6 +2189,62 @@
     }
   ],
   "activity_logs": [
+    {
+      "id": "act-mqqsvp1",
+      "entreprise_id": null,
+      "action": "Demande réinitialisation MDP",
+      "details": "Lien généré en local (SMTP non configuré) pour test-recov-1789859535660@relancio-audit.ci",
+      "created_at": "2026-09-19T23:12:16.234Z"
+    },
+    {
+      "id": "act-xsadx8l",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "action": "Relance WhatsApp Manuelle",
+      "details": "Relance manuelle enregistrée pour nzi amenan nadege (Solde: 50 000 F)",
+      "created_at": "2026-09-19T22:57:55.196Z"
+    },
+    {
+      "id": "act-ol4j3n6",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur franck kouassi",
+      "created_at": "2026-09-19T22:56:57.131Z"
+    },
+    {
+      "id": "act-coz1uwk",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur franck kouassi",
+      "created_at": "2026-09-19T22:55:23.415Z"
+    },
+    {
+      "id": "act-iny6ac8",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur franck kouassi",
+      "created_at": "2026-09-19T22:29:38.881Z"
+    },
+    {
+      "id": "act-oym5pr4",
+      "entreprise_id": "ent-1789518909739-s7z1",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur franck kouassi",
+      "created_at": "2026-09-19T22:14:39.559Z"
+    },
+    {
+      "id": "act-bofzdz0",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
+      "created_at": "2026-09-19T21:59:44.067Z"
+    },
+    {
+      "id": "act-16grh2s",
+      "entreprise_id": "ent-royal-clean",
+      "action": "Connexion",
+      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
+      "created_at": "2026-09-19T21:59:43.513Z"
+    },
     {
       "id": "act-0hmpovz",
       "entreprise_id": "ent-1789518909739-s7z1",
@@ -3503,62 +3588,24 @@
       "action": "Désactivation Client",
       "details": "Le client Cabinet Dentaire Dr Touré a été archivé",
       "created_at": "2026-09-16T18:55:42.302Z"
+    }
+  ],
+  "password_reset_tokens": [
+    {
+      "id": "prt-1789859515625-dzoyx",
+      "user_id": "usr-test-recov-1789859515503",
+      "token_hash": "09b4388fe19f2cdb11f9886671a98446bbedc3e75154feedcbdcef23c39d6dea",
+      "expires_at": "2026-09-20T00:11:55.625Z",
+      "used": true,
+      "created_at": "2026-09-19T23:11:55.625Z"
     },
     {
-      "id": "act-xshog19",
-      "entreprise_id": "ent-royal-clean",
-      "action": "Création Créance",
-      "details": "Créance de 45 000 FCFA créée pour Cabinet Dentaire Dr Touré (Motif: Commande urgente gants et masques)",
-      "created_at": "2026-09-16T18:55:42.284Z"
-    },
-    {
-      "id": "act-f5cx52w",
-      "entreprise_id": "ent-royal-clean",
-      "action": "Encaissement Reçu",
-      "details": "Paiement de 70 000 FCFA reçu pour la créance #cre-674xj8d (Cabinet Dentaire Dr Touré)",
-      "created_at": "2026-09-16T18:55:42.257Z"
-    },
-    {
-      "id": "act-s99rl0o",
-      "entreprise_id": "ent-royal-clean",
-      "action": "Encaissement Reçu",
-      "details": "Paiement de 30 000 FCFA reçu pour la créance #cre-674xj8d (Cabinet Dentaire Dr Touré)",
-      "created_at": "2026-09-16T18:55:42.244Z"
-    },
-    {
-      "id": "act-cu6c0wq",
-      "entreprise_id": "ent-royal-clean",
-      "action": "Création Créance",
-      "details": "Créance de 100 000 FCFA créée pour Cabinet Dentaire Dr Touré (Motif: Nettoyage spécialisé 50 blouses médicales)",
-      "created_at": "2026-09-16T18:55:42.219Z"
-    },
-    {
-      "id": "act-a5awfxd",
-      "entreprise_id": "ent-royal-clean",
-      "action": "Modification Client",
-      "details": "Fiche mise à jour pour le client Cabinet Dentaire Dr Touré",
-      "created_at": "2026-09-16T18:55:42.197Z"
-    },
-    {
-      "id": "act-pb7eywv",
-      "entreprise_id": "ent-royal-clean",
-      "action": "Nouveau Client",
-      "details": "Client créé : Cabinet Dentaire Dr Touré (+225 07 17100551)",
-      "created_at": "2026-09-16T18:55:42.184Z"
-    },
-    {
-      "id": "act-8edbvbf",
-      "entreprise_id": "ent-etoiles-ecole",
-      "action": "Connexion",
-      "details": "Connexion de l'utilisateur Fatou Diallo",
-      "created_at": "2026-09-16T18:55:42.155Z"
-    },
-    {
-      "id": "act-6807p70",
-      "entreprise_id": "ent-royal-clean",
-      "action": "Connexion",
-      "details": "Connexion de l'utilisateur Kouassi Jean-Marc",
-      "created_at": "2026-09-16T18:55:41.619Z"
+      "id": "prt-1789859515653-kielb",
+      "user_id": "usr-test-recov-1789859515503",
+      "token_hash": "34e85979eaed04d92d1794d50909ae16f0c372bf76ef7c7c82d697cd2447d578",
+      "expires_at": "2026-09-19T23:01:55.653Z",
+      "used": false,
+      "created_at": "2026-09-19T23:11:55.653Z"
     }
   ]
 }

@@ -7,6 +7,7 @@ interface LanguageContextProps {
   setLocale: (locale: SupportedLocale) => void;
   t: Translations;
   isRTL: boolean;
+  isRtl: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
@@ -32,6 +33,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setLocale,
         t: translations[locale] || translations.fr,
         isRTL: locale === 'ar',
+        isRtl: locale === 'ar',
       }}
     >
       {children}

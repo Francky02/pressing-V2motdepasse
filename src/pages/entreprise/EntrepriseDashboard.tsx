@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { apiRequest } from '../../services/api';
 import {
   TrendingDown,
@@ -68,6 +69,7 @@ interface DashboardResponse {
 
 export const EntrepriseDashboard: React.FC = () => {
   const { company } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export const EntrepriseDashboard: React.FC = () => {
       const res = await apiRequest<DashboardResponse>('/api/company/dashboard');
       setData(res);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erreur chargement dashboard');
+      setError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setLoading(false);
     }
@@ -97,27 +99,27 @@ export const EntrepriseDashboard: React.FC = () => {
       case 'paye':
         return (
           <span style={{ fontSize: '0.7rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            Encaissé
+            {t.common.statusLabels.payee}
           </span>
         );
       case 'partiellement_payee':
         return (
           <span style={{ fontSize: '0.7rem', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.15)', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-            Partiel
+            {t.common.statusLabels.partiellement_payee}
           </span>
         );
       case 'en_retard':
       case 'relance':
         return (
           <span style={{ fontSize: '0.7rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.15)', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-            En retard
+            {t.common.statusLabels.en_retard}
           </span>
         );
       case 'en_attente':
       default:
         return (
           <span style={{ fontSize: '0.7rem', color: '#60a5fa', background: 'rgba(59, 130, 246, 0.15)', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-            En attente
+            {t.common.statusLabels.en_attente}
           </span>
         );
     }
@@ -157,12 +159,12 @@ export const EntrepriseDashboard: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-                Tableau de bord
+                {t.layout.dashboard}
               </h1>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>• {company?.nom}</span>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.15rem 0 0 0' }}>
-              Suivi en temps réel de vos créances, encaissements et relances
+              {t.dashboardPortal.welcomeSubtitle}
             </p>
           </div>
         </div>
@@ -175,7 +177,7 @@ export const EntrepriseDashboard: React.FC = () => {
             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span>Actualiser</span>
+            <span>{t.common.refresh}</span>
           </button>
           <Link
             to="/entreprise/clients"
@@ -183,7 +185,7 @@ export const EntrepriseDashboard: React.FC = () => {
             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}
           >
             <Users size={13} />
-            <span>Clients</span>
+            <span>{t.layout.clients}</span>
           </Link>
           <Link
             to="/entreprise/creances"
@@ -191,7 +193,7 @@ export const EntrepriseDashboard: React.FC = () => {
             style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem', backgroundColor: primaryColor, borderColor: primaryColor, textDecoration: 'none' }}
           >
             <Plus size={13} />
-            <span>Nouvelle créance</span>
+            <span>{t.dashboardPortal.newReceivable}</span>
           </Link>
         </div>
       </div>
@@ -215,7 +217,7 @@ export const EntrepriseDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* 4 Essential Summary Cards - Ultra Compact & Visible Together */}
+      {/* 4 Essential Summary Cards */}
       <div
         style={{
           display: 'grid',
@@ -229,7 +231,7 @@ export const EntrepriseDashboard: React.FC = () => {
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid rgba(239, 68, 68, 0.25)',
-            borderLeft: '4px solid #ef4444',
+            borderInlineStart: '4px solid #ef4444',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1.1rem',
             textDecoration: 'none',
@@ -239,15 +241,15 @@ export const EntrepriseDashboard: React.FC = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
             <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#f87171' }}>
-              Total à récupérer
+              {t.dashboardPortal.totalToRecover}
             </span>
             <TrendingDown size={16} color="#ef4444" />
           </div>
           <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'white' }}>
-            {data ? data.stats.totalToRecover.toLocaleString('fr-FR') : '...'} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>FCFA</span>
+            {data ? data.stats.totalToRecover.toLocaleString() : '...'} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t.common.currency}</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#fca5a5', marginTop: '0.15rem' }}>
-            {data ? data.stats.pendingCount : 0} créance(s) avec solde dû
+            {data ? data.stats.pendingCount : 0} {t.dashboardPortal.unpaidDebtsCount}
           </div>
         </Link>
 
@@ -257,7 +259,7 @@ export const EntrepriseDashboard: React.FC = () => {
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid rgba(16, 185, 129, 0.25)',
-            borderLeft: '4px solid #10b981',
+            borderInlineStart: '4px solid #10b981',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1.1rem',
             textDecoration: 'none',
@@ -267,25 +269,25 @@ export const EntrepriseDashboard: React.FC = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
             <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#34d399' }}>
-              Total encaissé
+              {t.dashboardPortal.totalCollected}
             </span>
             <TrendingUp size={16} color="#10b981" />
           </div>
           <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'white' }}>
-            {data ? data.stats.totalCollected.toLocaleString('fr-FR') : '...'} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>FCFA</span>
+            {data ? data.stats.totalCollected.toLocaleString() : '...'} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t.common.currency}</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#86efac', marginTop: '0.15rem' }}>
-            Taux de recouvrement : {data ? data.stats.recoveryRate : 0}%
+            {t.dashboardPortal.recoveryRate} : {data ? data.stats.recoveryRate : 0}%
           </div>
         </Link>
 
-        {/* 3. Créances en attente */}
+        {/* 3. Créances en cours */}
         <Link
           to="/entreprise/creances"
           style={{
             background: 'var(--bg-surface)',
             border: '1px solid rgba(245, 158, 11, 0.25)',
-            borderLeft: '4px solid #f59e0b',
+            borderInlineStart: '4px solid #f59e0b',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1.1rem',
             textDecoration: 'none',
@@ -295,7 +297,7 @@ export const EntrepriseDashboard: React.FC = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
             <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#fbbf24' }}>
-              Créances en cours
+              {t.creances.filterPending}
             </span>
             <Clock size={16} color="#f59e0b" />
           </div>
@@ -303,7 +305,7 @@ export const EntrepriseDashboard: React.FC = () => {
             {data ? data.stats.pendingCount : '...'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-            {data ? data.stats.partiallyPaidCount : 0} partiellement payée(s)
+            {data ? data.stats.partiallyPaidCount : 0} {t.creances.filterPartial}
           </div>
         </Link>
 
@@ -313,7 +315,7 @@ export const EntrepriseDashboard: React.FC = () => {
           style={{
             background: 'var(--bg-surface)',
             border: (data?.stats.clientsToRemindCount || 0) > 0 ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid var(--border-subtle)',
-            borderLeft: '4px solid #6366f1',
+            borderInlineStart: '4px solid #6366f1',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1.1rem',
             textDecoration: 'none',
@@ -323,7 +325,7 @@ export const EntrepriseDashboard: React.FC = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
             <span style={{ fontSize: '0.76rem', fontWeight: 700, color: (data?.stats.clientsToRemindCount || 0) > 0 ? '#f87171' : '#a5b4fc' }}>
-              Clients à relancer
+              {t.dashboardPortal.clientsToRemind}
             </span>
             <BellRing size={16} color={(data?.stats.clientsToRemindCount || 0) > 0 ? '#ef4444' : '#6366f1'} />
           </div>
@@ -331,12 +333,12 @@ export const EntrepriseDashboard: React.FC = () => {
             {data ? (data.stats.clientsToRemindCount || data.stats.overdueCount || 0) : '...'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-            {data?.stats.overdueCount || 0} créance(s) en retard
+            {data?.stats.overdueCount || 0} {t.dashboardPortal.overdueCount}
           </div>
         </Link>
       </div>
 
-      {/* Main Two-Column View - Highly Compact & Informative */}
+      {/* Main Two-Column View */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
         {/* Left: Créances récentes */}
         <div
@@ -350,10 +352,10 @@ export const EntrepriseDashboard: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <FileText size={16} color={primaryColor} />
-              <span>Créances récentes</span>
+              <span>{t.dashboardPortal.recentReceivables}</span>
             </h3>
             <Link to="/entreprise/creances" style={{ fontSize: '0.75rem', color: primaryColor, textDecoration: 'none', fontWeight: 700 }}>
-              Gérer toutes les créances →
+              {t.dashboardPortal.viewAll} {isRTL ? '←' : '→'}
             </Link>
           </div>
 
@@ -389,13 +391,13 @@ export const EntrepriseDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ textAlign: isRTL ? 'left' : 'right', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div>
                         <div style={{ fontWeight: 800, color: 'white', fontSize: '0.88rem' }}>
-                          {total.toLocaleString('fr-FR')} F
+                          {total.toLocaleString()} {t.common.currency}
                         </div>
                         <div style={{ fontSize: '0.7rem', color: solde > 0 ? '#f87171' : '#34d399' }}>
-                          Solde: {solde.toLocaleString('fr-FR')} F
+                          {t.common.balance}: {solde.toLocaleString()} {t.common.currency}
                         </div>
                       </div>
                       {getStatusBadge(cr.statut)}
@@ -405,7 +407,7 @@ export const EntrepriseDashboard: React.FC = () => {
               })
             ) : (
               <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                Aucune créance enregistrée pour l'instant.
+                {t.dashboardPortal.noReceivablesYet}
               </div>
             )}
           </div>
@@ -425,10 +427,10 @@ export const EntrepriseDashboard: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <CreditCard size={16} color="#34d399" />
-                <span>Derniers encaissements</span>
+                <span>{t.dashboardPortal.recentPayments}</span>
               </h3>
               <Link to="/entreprise/paiements" style={{ fontSize: '0.75rem', color: '#34d399', textDecoration: 'none', fontWeight: 700 }}>
-                Journal complet →
+                {t.dashboardPortal.viewAll} {isRTL ? '←' : '→'}
               </Link>
             </div>
 
@@ -457,14 +459,14 @@ export const EntrepriseDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#34d399' }}>
-                      +{p.montant.toLocaleString('fr-FR')} F
+                      +{p.montant.toLocaleString()} {t.common.currency}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '1.25rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                Aucun paiement enregistré pour l'instant.
+                {t.dashboardPortal.noPaymentsYet}
               </div>
             )}
           </div>
@@ -481,7 +483,7 @@ export const EntrepriseDashboard: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.65rem' }}>
               <Activity size={15} color="#60a5fa" />
               <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'white', margin: 0 }}>
-                Activité récente
+                {t.dashboardPortal.recentActivity}
               </h3>
             </div>
 
@@ -494,17 +496,17 @@ export const EntrepriseDashboard: React.FC = () => {
                       padding: '0.45rem 0.65rem',
                       borderRadius: 'var(--radius-sm)',
                       background: 'rgba(255, 255, 255, 0.02)',
-                      borderLeft: `2px solid ${primaryColor}`,
+                      borderInlineStart: `2px solid ${primaryColor}`,
                       fontSize: '0.74rem',
                     }}
                   >
                     <span style={{ fontWeight: 700, color: 'white' }}>{act.action}</span>
-                    <span style={{ color: 'var(--text-secondary)', marginLeft: '0.35rem' }}>{act.details}</span>
+                    <span style={{ color: 'var(--text-secondary)', marginInlineStart: '0.35rem' }}>{act.details}</span>
                   </div>
                 ))
               ) : (
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textAlign: 'center', padding: '0.75rem' }}>
-                  Aucune activité récente.
+                  {t.dashboardPortal.noActivityYet}
                 </div>
               )}
             </div>

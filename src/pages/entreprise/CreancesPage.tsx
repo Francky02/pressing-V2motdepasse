@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { apiRequest, type DemandePaiementItem } from '../../services/api';
 import {
   FileText,
@@ -83,6 +84,7 @@ interface CreanceDetailResponse {
 
 export const CreancesPage: React.FC = () => {
   const { company } = useAuth();
+  const { t, locale, isRtl } = useLanguage();
   const primaryColor = company?.couleur_principale || '#10b981';
 
   const [creances, setCreances] = useState<CreanceItem[]>([]);
@@ -145,6 +147,10 @@ export const CreancesPage: React.FC = () => {
     notes: '',
   });
 
+  const formatAmount = (val: number) => {
+    return val.toLocaleString(locale === 'ar' ? 'ar-EG' : locale === 'en' ? 'en-US' : 'fr-FR');
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -156,7 +162,7 @@ export const CreancesPage: React.FC = () => {
       setCreances(creancesRes.creances);
       setClients(clientsRes.clients);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors du chargement des créances');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setLoading(false);
     }
@@ -177,7 +183,7 @@ export const CreancesPage: React.FC = () => {
       setSelectedCreanceDetail(res);
       setCreanceDemandes(demandesRes.demandes || []);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Impossible de charger la créance');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setDetailLoading(false);
     }
@@ -187,7 +193,7 @@ export const CreancesPage: React.FC = () => {
     setTargetCreanceForDemande(creance);
     setDemandeForm({
       montant: creance.solde.toString(),
-      motif: `Règlement - ${creance.motif}`,
+      motif: `${t.creances.motif} - ${creance.motif}`,
       description: creance.description || '',
       expiration: '14',
       customExp: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString().split('T')[0],
@@ -216,13 +222,13 @@ export const CreancesPage: React.FC = () => {
         }
       );
 
-      setSuccessMsg('Demande de paiement générée avec succès !');
+      setSuccessMsg(t.demandes.createSuccess);
       setIsDemandeModalOpen(false);
       setCreatedDemande({
         token: res.demande.token,
         url: `${window.location.origin}/payer/${res.demande.token}`,
         montant: res.demande.montant,
-        clientNom: targetCreanceForDemande.client_nom || 'Client',
+        clientNom: targetCreanceForDemande.client_nom || t.common.client,
       });
 
       if (selectedCreanceDetail && selectedCreanceDetail.creance.id === targetCreanceForDemande.id) {
@@ -232,7 +238,7 @@ export const CreancesPage: React.FC = () => {
         setCreanceDemandes(updatedDemandes.demandes || []);
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur génération lien');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
     }
@@ -252,62 +258,27 @@ export const CreancesPage: React.FC = () => {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateFastClient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fastClientForm.nom.trim() || !fastClientForm.telephone.trim()) {
-      setErrorMsg('Nom et téléphone requis pour créer un client');
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      const res = await apiRequest<{ client: ClientOption }>('/api/company/clients', {
-        method: 'POST',
-        body: JSON.stringify(fastClientForm),
-      });
-
-      setClients(prev => [res.client, ...prev]);
-      setCreateForm(prev => ({ ...prev, client_id: res.client.id }));
-      setIsFastClientModalOpen(false);
-      setFastClientForm({ nom: '', telephone: '', type: 'particulier' });
-      setSuccessMsg(`Client ${res.client.nom} créé et sélectionné !`);
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur création client');
-    } finally {
-      setActionLoading(false);
-      setTimeout(() => setSuccessMsg(null), 3000);
-    }
-  };
-
   const handleSaveCreance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.client_id) {
-      setErrorMsg('Veuillez sélectionner ou créer un client');
+      setErrorMsg(locale === 'ar' ? 'يرجى اختيار عميل أو إنشاء عميل جديد' : 'Veuillez sélectionner un client ou en créer un nouveau');
       return;
     }
 
     const amount = Number(createForm.montant_total);
     if (isNaN(amount) || amount <= 0) {
-      setErrorMsg('Le montant doit être un nombre supérieur à zéro');
+      setErrorMsg(locale === 'ar' ? 'يرجى إدخال مبلغ أكبر من 0' : 'Veuillez saisir un montant valide');
       return;
     }
-
-    if (!createForm.date_echeance) {
-      setErrorMsg('La date d\'échéance est obligatoire');
-      return;
-    }
-
-    const finalMotif = createForm.motif === 'Autre' && createForm.custom_motif.trim()
-      ? createForm.custom_motif.trim()
-      : createForm.motif;
 
     try {
       setActionLoading(true);
+      setErrorMsg(null);
       await apiRequest('/api/company/creances', {
         method: 'POST',
         body: JSON.stringify({
           client_id: createForm.client_id,
-          motif: finalMotif,
+          motif: createForm.motif === 'Autre' && createForm.custom_motif ? createForm.custom_motif : createForm.motif,
           description: createForm.description,
           montant_total: amount,
           date_creation: createForm.date_creation,
@@ -316,25 +287,57 @@ export const CreancesPage: React.FC = () => {
         }),
       });
 
-      setSuccessMsg(`Créance de ${amount.toLocaleString('fr-FR')} FCFA enregistrée`);
+      setSuccessMsg(t.creances.createSuccess);
       setIsCreateModalOpen(false);
       await fetchData();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement de la créance');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
       setTimeout(() => setSuccessMsg(null), 3500);
     }
   };
 
-  const handleOpenPayment = (creance: CreanceItem, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const handleCreateFastClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fastClientForm.nom.trim() || !fastClientForm.telephone.trim()) {
+      setErrorMsg(
+        locale === 'ar'
+          ? 'يرجى إدخال الاسم ورقم الهاتف'
+          : locale === 'en'
+          ? 'Please enter customer name and phone number'
+          : 'Veuillez remplir le nom et le numéro de téléphone'
+      );
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const res = await apiRequest<{ client: ClientOption }>(`/api/company/clients`, {
+        method: 'POST',
+        body: JSON.stringify(fastClientForm),
+      });
+
+      setClients(prev => [res.client, ...prev]);
+      setCreateForm(prev => ({ ...prev, client_id: res.client.id }));
+      setIsFastClientModalOpen(false);
+      setFastClientForm({ nom: '', telephone: '', type: 'particulier' });
+      setSuccessMsg(t.clients.createSuccess);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    }
+  };
+
+  const handleOpenPayment = (creance: CreanceItem) => {
     setPaymentForm({
       montant: String(creance.solde),
       moyen_paiement: 'especes',
       date_paiement: new Date().toISOString().split('T')[0],
-      reference: 'ENC-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
-      notes: 'Règlement de facture',
+      reference: `REG-${Date.now().toString().slice(-6)}`,
+      notes: '',
     });
     setIsPaymentModalOpen(true);
   };
@@ -345,12 +348,12 @@ export const CreancesPage: React.FC = () => {
 
     const amount = Number(paymentForm.montant);
     if (isNaN(amount) || amount <= 0) {
-      setErrorMsg('Le montant à encaisser doit être supérieur à zéro');
+      setErrorMsg(locale === 'ar' ? 'يرجى إدخال مبلغ دفع صالح' : 'Veuillez saisir un montant de paiement valide');
       return;
     }
 
     if (amount > selectedCreanceDetail.creance.solde) {
-      setErrorMsg(`Le montant (${amount.toLocaleString('fr-FR')} F) ne peut dépasser le solde restant (${selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} F)`);
+      setErrorMsg(locale === 'ar' ? 'المبلغ المدخل يتجاوز الرصيد المتبقي' : `Le montant ne peut dépasser le solde restant`);
       return;
     }
 
@@ -367,12 +370,12 @@ export const CreancesPage: React.FC = () => {
         }),
       });
 
-      setSuccessMsg(`Encaissement de ${amount.toLocaleString('fr-FR')} FCFA validé !`);
+      setSuccessMsg(t.creances.paymentRecordedSuccess);
       setIsPaymentModalOpen(false);
       await fetchData();
       await openCreanceDetail(selectedCreanceDetail.creance.id);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement du paiement');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
       setTimeout(() => setSuccessMsg(null), 3500);
@@ -386,7 +389,6 @@ export const CreancesPage: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 3000);
   };
 
-  // Filtrage
   const filteredCreances = useMemo(() => {
     return creances.filter(c => {
       const matchSearch =
@@ -402,7 +404,6 @@ export const CreancesPage: React.FC = () => {
     });
   }, [creances, search, statusFilter]);
 
-  // KPI stats
   const stats = useMemo(() => {
     let toRecover = 0;
     let collected = 0;
@@ -432,26 +433,26 @@ export const CreancesPage: React.FC = () => {
       case 'payee':
         return (
           <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            PAYÉE
+            {t.common.statusLabels.payee}
           </span>
         );
       case 'partiellement_payee':
         return (
           <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-            PARTIELLE
+            {t.common.statusLabels.partiellement_payee}
           </span>
         );
       case 'en_retard':
         return (
           <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-            EN RETARD
+            {t.common.statusLabels.en_retard}
           </span>
         );
       case 'en_attente':
       default:
         return (
           <span style={{ fontSize: '0.7rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 700, background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-            EN ATTENTE
+            {t.common.statusLabels.en_attente}
           </span>
         );
     }
@@ -464,7 +465,7 @@ export const CreancesPage: React.FC = () => {
         <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
           <AlertTriangle size={15} />
           <span>{errorMsg}</span>
-          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
+          <button type="button" onClick={() => setErrorMsg(null)} style={{ [isRtl ? 'marginRight' : 'marginLeft']: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
@@ -472,11 +473,11 @@ export const CreancesPage: React.FC = () => {
         <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
           <CheckCircle2 size={15} />
           <span>{successMsg}</span>
-          <button type="button" onClick={() => setSuccessMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
+          <button type="button" onClick={() => setSuccessMsg(null)} style={{ [isRtl ? 'marginRight' : 'marginLeft']: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
-      {/* Unified Compact Top Bar : Titre, Recherche, Filtres, KPIs & Action */}
+      {/* Unified Compact Top Bar */}
       <div
         style={{
           background: 'var(--bg-surface)',
@@ -498,14 +499,14 @@ export const CreancesPage: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-                Créances
+                {t.creances.title}
               </h1>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
                 {filteredCreances.length}
               </span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              À récupérer : <strong style={{ color: '#f87171' }}>{stats.toRecover.toLocaleString('fr-FR')} F</strong> • En retard : <strong style={{ color: stats.overdueCount > 0 ? '#f87171' : 'var(--text-muted)' }}>{stats.overdueCount}</strong>
+              {t.creances.remainingBalance} : <strong style={{ color: '#f87171' }}>{formatAmount(stats.toRecover)} {t.common.currency}</strong> • {t.common.statusLabels.en_retard} : <strong style={{ color: stats.overdueCount > 0 ? '#f87171' : 'var(--text-muted)' }}>{stats.overdueCount}</strong>
             </div>
           </div>
         </div>
@@ -530,7 +531,7 @@ export const CreancesPage: React.FC = () => {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher client, motif..."
+            placeholder={`${t.common.search}...`}
             style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.82rem', width: '100%', outline: 'none' }}
           />
           {search && (
@@ -544,11 +545,11 @@ export const CreancesPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', padding: '0.15rem' }}>
             {[
-              { id: 'toutes', label: 'Toutes' },
-              { id: 'en_attente', label: 'En attente' },
-              { id: 'partiellement_payee', label: 'Partielles' },
-              { id: 'en_retard', label: 'En retard' },
-              { id: 'payee', label: 'Payées' },
+              { id: 'toutes', label: t.creances.filterAll },
+              { id: 'en_attente', label: t.creances.filterPending },
+              { id: 'partiellement_payee', label: t.creances.filterPartial },
+              { id: 'en_retard', label: t.creances.filterOverdue },
+              { id: 'payee', label: t.creances.filterPaid },
             ].map(f => {
               const isActive = statusFilter === f.id;
               return (
@@ -578,7 +579,7 @@ export const CreancesPage: React.FC = () => {
             onClick={fetchData}
             className="btn btn-secondary btn-sm"
             style={{ padding: '0.35rem 0.55rem' }}
-            title="Actualiser"
+            title={t.common.refresh}
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -590,16 +591,16 @@ export const CreancesPage: React.FC = () => {
             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem', backgroundColor: primaryColor, borderColor: primaryColor }}
           >
             <Plus size={14} />
-            <span>Nouvelle créance</span>
+            <span>{t.creances.newReceivable}</span>
           </button>
         </div>
       </div>
 
-      {/* High-density Debts Table */}
+      {/* Debts Table */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
           <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ fontSize: '0.85rem' }}>Chargement des créances...</div>
+          <div style={{ fontSize: '0.85rem' }}>{t.common.loading}</div>
         </div>
       ) : filteredCreances.length === 0 ? (
         <div
@@ -613,7 +614,7 @@ export const CreancesPage: React.FC = () => {
         >
           <FileText size={28} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem auto' }} />
           <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>
-            {search ? 'Aucune créance ne correspond aux critères' : 'Aucune créance pour l\'instant'}
+            {search ? t.creances.noCreancesFound : t.creances.subtitle}
           </div>
           <button
             type="button"
@@ -622,7 +623,7 @@ export const CreancesPage: React.FC = () => {
             style={{ marginTop: '1rem', backgroundColor: primaryColor, borderColor: primaryColor }}
           >
             <Plus size={14} />
-            <span>Créer une créance</span>
+            <span>{t.creances.newReceivable}</span>
           </button>
         </div>
       ) : (
@@ -635,17 +636,17 @@ export const CreancesPage: React.FC = () => {
           }}
         >
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: isRtl ? 'right' : 'left', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Client & Contact</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Motif & Description</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Montant Total</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Payé</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Solde Dû</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Échéance</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>Statut</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.client} & {t.common.phone}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.creances.motif} & {t.creances.description}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.creances.initialAmount}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.creances.paidAmount}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.creances.remainingBalance}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.creances.dueDate}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>{t.common.status}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -671,7 +672,7 @@ export const CreancesPage: React.FC = () => {
                       {/* Client */}
                       <td style={{ padding: '0.65rem 0.85rem' }}>
                         <div style={{ fontWeight: 700, color: 'white' }}>{creance.client_nom}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{creance.client_telephone}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', direction: 'ltr', textAlign: isRtl ? 'right' : 'left' }}>{creance.client_telephone}</div>
                       </td>
 
                       {/* Motif */}
@@ -685,18 +686,18 @@ export const CreancesPage: React.FC = () => {
                       </td>
 
                       {/* Montant total */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right', fontWeight: 700, color: 'white' }}>
-                        {creance.montant_total.toLocaleString('fr-FR')} F
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right', fontWeight: 700, color: 'white' }}>
+                        {formatAmount(creance.montant_total)} {t.common.currency}
                       </td>
 
                       {/* Montant payé */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
-                        <div style={{ color: '#34d399', fontWeight: 600 }}>{creance.montant_paye.toLocaleString('fr-FR')} F</div>
-                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{percentPaid}%</div>
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right' }}>
+                        <div style={{ color: '#34d399', fontWeight: 600 }}>{formatAmount(creance.montant_paye)} {t.common.currency}</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', direction: 'ltr' }}>{percentPaid}%</div>
                       </td>
 
                       {/* Solde restant dû */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right' }}>
                         <span
                           style={{
                             fontWeight: 800,
@@ -707,7 +708,7 @@ export const CreancesPage: React.FC = () => {
                             border: creance.solde > 0 ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
                           }}
                         >
-                          {creance.solde.toLocaleString('fr-FR')} F
+                          {formatAmount(creance.solde)} {t.common.currency}
                         </span>
                       </td>
 
@@ -724,8 +725,8 @@ export const CreancesPage: React.FC = () => {
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.35rem' }} onClick={e => e.stopPropagation()}>
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: isRtl ? 'flex-start' : 'flex-end', gap: '0.35rem' }} onClick={e => e.stopPropagation()}>
                           {creance.solde > 0 && (
                             <>
                               <button
@@ -736,10 +737,10 @@ export const CreancesPage: React.FC = () => {
                                 }}
                                 className="btn btn-secondary btn-sm"
                                 style={{ padding: '0.25rem 0.5rem', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                title="Créer une demande de paiement / lien public"
+                                title={t.demandes.newLink}
                               >
                                 <Link2 size={12} color={primaryColor} />
-                                <span>Lien</span>
+                                <span>{t.demandes.token}</span>
                               </button>
 
                               <button
@@ -754,7 +755,7 @@ export const CreancesPage: React.FC = () => {
                                 style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                               >
                                 <CreditCard size={12} />
-                                <span>Encaisser</span>
+                                <span>{t.creances.recordPayment}</span>
                               </button>
                             </>
                           )}
@@ -764,7 +765,7 @@ export const CreancesPage: React.FC = () => {
                             className="btn btn-secondary btn-sm"
                             style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }}
                           >
-                            Détails
+                            {t.common.details}
                           </button>
                         </div>
                       </td>
@@ -777,9 +778,7 @@ export const CreancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 1 : NOUVELLE CRÉANCE (2-COLUMN COMPACT GRID) */}
-      {/* ==================================================== */}
+      {/* MODAL 1 : NOUVELLE CRÉANCE */}
       {isCreateModalOpen && (
         <div
           style={{
@@ -814,7 +813,7 @@ export const CreancesPage: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
-                Enregistrer une nouvelle créance
+                {t.creances.newReceivable}
               </h3>
               <button
                 type="button"
@@ -831,14 +830,14 @@ export const CreancesPage: React.FC = () => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                     <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      Client débiteur *
+                      {t.common.client} *
                     </label>
                     <button
                       type="button"
                       onClick={() => setIsFastClientModalOpen(true)}
                       style={{ background: 'none', border: 'none', color: primaryColor, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
                     >
-                      + Nouveau
+                      + {t.creances.addNewClientFast}
                     </button>
                   </div>
                   <select
@@ -866,11 +865,14 @@ export const CreancesPage: React.FC = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Motif de la créance *
+                    {t.creances.motif} *
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    required
                     value={createForm.motif}
                     onChange={e => setCreateForm({ ...createForm, motif: e.target.value })}
+                    placeholder={locale === 'ar' ? 'نوع الخدمة أو الفاتورة...' : 'Prestation de service...'}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -881,16 +883,7 @@ export const CreancesPage: React.FC = () => {
                       fontSize: '0.84rem',
                       outline: 'none',
                     }}
-                  >
-                    <option value="Prestation de service">Prestation de service</option>
-                    <option value="Produit / Marchandise">Produit / Marchandise</option>
-                    <option value="Réparation / SAV">Réparation / SAV</option>
-                    <option value="Scolarité / Écolage">Scolarité / Écolage</option>
-                    <option value="Nettoyage / Pressing">Nettoyage / Pressing</option>
-                    <option value="Commande / Devis">Commande / Devis</option>
-                    <option value="Honoraires">Honoraires</option>
-                    <option value="Autre">Autre motif...</option>
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -898,7 +891,7 @@ export const CreancesPage: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Montant total dû (FCFA) *
+                    {t.creances.initialAmount} ({t.common.currency}) *
                   </label>
                   <input
                     type="number"
@@ -916,13 +909,14 @@ export const CreancesPage: React.FC = () => {
                       color: 'white',
                       fontSize: '0.84rem',
                       outline: 'none',
+                      direction: 'ltr',
                     }}
                   />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Date d'échéance *
+                    {t.creances.dueDate} *
                   </label>
                   <input
                     type="date"
@@ -946,13 +940,13 @@ export const CreancesPage: React.FC = () => {
               {/* Description */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                  Description des prestations / articles
+                  {t.creances.description}
                 </label>
                 <input
                   type="text"
                   value={createForm.description}
                   onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
-                  placeholder="Détails facturés..."
+                  placeholder={locale === 'ar' ? 'تفاصيل إضافية عن الفاتورة...' : 'Détails facturés...'}
                   style={{
                     width: '100%',
                     padding: '0.55rem 0.75rem',
@@ -973,7 +967,7 @@ export const CreancesPage: React.FC = () => {
                   className="btn btn-secondary btn-sm"
                   disabled={actionLoading}
                 >
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
@@ -981,7 +975,7 @@ export const CreancesPage: React.FC = () => {
                   className="btn btn-primary btn-sm"
                   style={{ backgroundColor: primaryColor, borderColor: primaryColor }}
                 >
-                  {actionLoading ? 'Enregistrement...' : 'Créer la créance'}
+                  {actionLoading ? t.common.saving : t.creances.newReceivable}
                 </button>
               </div>
             </form>
@@ -989,9 +983,7 @@ export const CreancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
       {/* MODAL 2 : CRÉATION RAPIDE DE CLIENT */}
-      {/* ==================================================== */}
       {isFastClientModalOpen && (
         <div
           style={{
@@ -1024,7 +1016,7 @@ export const CreancesPage: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <h4 style={{ color: 'white', margin: 0, fontSize: '1rem', fontWeight: 800 }}>
-                Nouveau client rapide
+                {t.creances.addNewClientFast}
               </h4>
               <button type="button" onClick={() => setIsFastClientModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={16} />
@@ -1034,12 +1026,12 @@ export const CreancesPage: React.FC = () => {
             <form onSubmit={handleCreateFastClient} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                  Nom complet *
+                  {t.clients.name} *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Mme Koné Aïssata"
+                  placeholder={locale === 'ar' ? 'السيدة عائشة' : 'Mme Koné Aïssata'}
                   value={fastClientForm.nom}
                   onChange={e => setFastClientForm({ ...fastClientForm, nom: e.target.value })}
                   style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.84rem', outline: 'none' }}
@@ -1048,7 +1040,7 @@ export const CreancesPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                  Téléphone (WhatsApp) *
+                  {t.common.phone} (WhatsApp) *
                 </label>
                 <input
                   type="tel"
@@ -1056,14 +1048,14 @@ export const CreancesPage: React.FC = () => {
                   placeholder="+225 07 11 22 33"
                   value={fastClientForm.telephone}
                   onChange={e => setFastClientForm({ ...fastClientForm, telephone: e.target.value })}
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.84rem', outline: 'none' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.84rem', outline: 'none', direction: 'ltr', textAlign: isRtl ? 'right' : 'left' }}
                 />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.35rem' }}>
-                <button type="button" onClick={() => setIsFastClientModalOpen(false)} className="btn btn-secondary btn-sm">Annuler</button>
+                <button type="button" onClick={() => setIsFastClientModalOpen(false)} className="btn btn-secondary btn-sm">{t.common.cancel}</button>
                 <button type="submit" disabled={actionLoading} className="btn btn-primary btn-sm" style={{ backgroundColor: primaryColor, borderColor: primaryColor }}>
-                  {actionLoading ? 'Création...' : 'Créer et sélectionner'}
+                  {actionLoading ? t.common.saving : t.creances.addNewClientFast}
                 </button>
               </div>
             </form>
@@ -1071,9 +1063,7 @@ export const CreancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 3 : FICHE CRÉANCE COMPACTE (LEVEL 1 DIRECT) */}
-      {/* ==================================================== */}
+      {/* MODAL 3 : FICHE CRÉANCE COMPACTE */}
       {isDetailModalOpen && (
         <div
           style={{
@@ -1121,7 +1111,7 @@ export const CreancesPage: React.FC = () => {
                     {selectedCreanceDetail && getStatusBadge(selectedCreanceDetail.creance.statut)}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    Motif : {selectedCreanceDetail?.creance.motif} • Échéance : <strong>{selectedCreanceDetail?.creance.date_echeance}</strong>
+                    {t.creances.motif} : {selectedCreanceDetail?.creance.motif} • {t.creances.dueDate} : <strong>{selectedCreanceDetail?.creance.date_echeance}</strong>
                   </div>
                 </div>
               </div>
@@ -1135,13 +1125,13 @@ export const CreancesPage: React.FC = () => {
                     style={{ backgroundColor: primaryColor, borderColor: primaryColor, fontSize: '0.76rem', padding: '0.35rem 0.65rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                   >
                     <CreditCard size={13} />
-                    <span>Encaisser</span>
+                    <span>{t.creances.recordPayment}</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setIsDetailModalOpen(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '0.3rem' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', [isRtl ? 'marginRight' : 'marginLeft']: '0.3rem' }}
                 >
                   <X size={18} />
                 </button>
@@ -1153,32 +1143,32 @@ export const CreancesPage: React.FC = () => {
               {detailLoading || !selectedCreanceDetail ? (
                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.5rem auto' }} />
-                  <div>Chargement des détails...</div>
+                  <div>{t.common.loading}</div>
                 </div>
               ) : (
                 <>
-                  {/* Level 1: Financial Overview Direct Strip */}
+                  {/* Financial Strip */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
                     <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Montant Total</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t.creances.initialAmount}</div>
                       <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', marginTop: '0.15rem' }}>
-                        {selectedCreanceDetail.creance.montant_total.toLocaleString('fr-FR')} F
+                        {formatAmount(selectedCreanceDetail.creance.montant_total)} {t.common.currency}
                       </div>
                     </div>
 
                     <div style={{ background: 'var(--bg-main)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.7rem', color: '#34d399' }}>Déjà Encaissé</div>
+                      <div style={{ fontSize: '0.7rem', color: '#34d399' }}>{t.creances.paidAmount}</div>
                       <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#34d399', marginTop: '0.15rem' }}>
-                        {selectedCreanceDetail.creance.montant_paye.toLocaleString('fr-FR')} F
+                        {formatAmount(selectedCreanceDetail.creance.montant_paye)} {t.common.currency}
                       </div>
                     </div>
 
                     <div style={{ background: 'var(--bg-main)', border: selectedCreanceDetail.creance.solde > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
                       <div style={{ fontSize: '0.7rem', color: selectedCreanceDetail.creance.solde > 0 ? '#f87171' : 'var(--text-muted)' }}>
-                        Solde Restant
+                        {t.creances.remainingBalance}
                       </div>
                       <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedCreanceDetail.creance.solde > 0 ? '#f87171' : 'white', marginTop: '0.15rem' }}>
-                        {selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} F
+                        {formatAmount(selectedCreanceDetail.creance.solde)} {t.common.currency}
                       </div>
                     </div>
                   </div>
@@ -1188,13 +1178,13 @@ export const CreancesPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                       <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <CreditCard size={15} color="#34d399" />
-                        <span>Versements enregistrés ({selectedCreanceDetail.paiements.length})</span>
+                        <span>{t.creances.paymentHistory} ({selectedCreanceDetail.paiements.length})</span>
                       </span>
                     </div>
 
                     {selectedCreanceDetail.paiements.length === 0 ? (
                       <div style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)' }}>
-                        Aucun paiement partiel ou total pour cette créance.
+                        {t.paiements.noPaymentsFound}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -1216,7 +1206,7 @@ export const CreancesPage: React.FC = () => {
                               <strong style={{ color: 'white' }}>{p.reference}</strong> ({p.moyen_paiement}) • {p.date_paiement}
                             </div>
                             <div style={{ fontWeight: 800, color: '#34d399' }}>
-                              +{p.montant.toLocaleString('fr-FR')} F
+                              +{formatAmount(p.montant)} {t.common.currency}
                             </div>
                           </div>
                         ))}
@@ -1224,7 +1214,7 @@ export const CreancesPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Section Lien de Paiement Public (Compact) */}
+                  {/* Section Lien de Paiement Public */}
                   <div
                     style={{
                       background: 'rgba(255, 255, 255, 0.02)',
@@ -1240,10 +1230,10 @@ export const CreancesPage: React.FC = () => {
                       <div>
                         <div style={{ fontWeight: 700, color: 'white', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                           <Link2 size={14} color={primaryColor} />
-                          <span>Liens de Paiement en ligne ({creanceDemandes.length})</span>
+                          <span>{t.demandes.title} ({creanceDemandes.length})</span>
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                          Permet au client de consulter et régler sa créance en ligne
+                          {t.demandes.subtitle}
                         </div>
                       </div>
 
@@ -1255,7 +1245,7 @@ export const CreancesPage: React.FC = () => {
                           style={{ backgroundColor: primaryColor, borderColor: primaryColor, fontSize: '0.72rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                         >
                           <Plus size={12} />
-                          <span>Générer un lien</span>
+                          <span>{t.demandes.newLink}</span>
                         </button>
                       )}
                     </div>
@@ -1280,8 +1270,8 @@ export const CreancesPage: React.FC = () => {
                               }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden' }}>
-                                <span style={{ fontWeight: 700, color: 'white' }}>{d.montant.toLocaleString('fr-FR')} F</span>
-                                <span style={{ color: 'var(--text-muted)' }}>• /payer/{d.token.substring(0, 10)}...</span>
+                                <span style={{ fontWeight: 700, color: 'white' }}>{formatAmount(d.montant)} {t.common.currency}</span>
+                                <span style={{ color: 'var(--text-muted)', direction: 'ltr' }}>• /payer/{d.token.substring(0, 10)}...</span>
                               </div>
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -1290,7 +1280,7 @@ export const CreancesPage: React.FC = () => {
                                   onClick={() => handleCopyPaymentLink(linkUrl)}
                                   className="btn btn-secondary btn-sm"
                                   style={{ padding: '0.2rem 0.45rem', fontSize: '0.68rem' }}
-                                  title="Copier le lien"
+                                  title={t.common.copy}
                                 >
                                   <Copy size={11} />
                                 </button>
@@ -1300,7 +1290,7 @@ export const CreancesPage: React.FC = () => {
                                   rel="noopener noreferrer"
                                   className="btn btn-secondary btn-sm"
                                   style={{ padding: '0.2rem 0.45rem', fontSize: '0.68rem' }}
-                                  title="Ouvrir la page"
+                                  title={t.demandes.openPublicPage}
                                 >
                                   <ExternalLink size={11} />
                                 </a>
@@ -1316,12 +1306,14 @@ export const CreancesPage: React.FC = () => {
                   {selectedCreanceDetail.creance.client_telephone && (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(34, 197, 94, 0.06)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                        Relance rapide pour <strong>{selectedCreanceDetail.creance.client_nom}</strong>
+                        {t.relances.sendWhatsApp} : <strong>{selectedCreanceDetail.creance.client_nom}</strong>
                       </span>
 
                       <a
                         href={`https://wa.me/${selectedCreanceDetail.creance.client_telephone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                          `Bonjour ${selectedCreanceDetail.creance.client_nom}, ${company?.nom} vous informe que votre créance concernant "${selectedCreanceDetail.creance.motif}" s'élève à ${selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} FCFA avec une échéance fixée au ${selectedCreanceDetail.creance.date_echeance}. Merci de procéder au règlement.`
+                          locale === 'ar'
+                            ? `مرحباً ${selectedCreanceDetail.creance.client_nom}، تحيطكم ${company?.nom} علماً بأن مستحقاتكم بشأن "${selectedCreanceDetail.creance.motif}" تبلغ ${formatAmount(selectedCreanceDetail.creance.solde)} ${t.common.currency} وتاريخ الاستحقاق هو ${selectedCreanceDetail.creance.date_echeance}. نرجو منكم سرعة السداد.`
+                            : `Bonjour ${selectedCreanceDetail.creance.client_nom}, ${company?.nom} vous informe que votre créance concernant "${selectedCreanceDetail.creance.motif}" s'élève à ${selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} FCFA avec une échéance fixée au ${selectedCreanceDetail.creance.date_echeance}. Merci de procéder au règlement.`
                         )}`}
                         target="_blank"
                         rel="noreferrer"
@@ -1329,7 +1321,7 @@ export const CreancesPage: React.FC = () => {
                         style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none', color: '#22c55e', fontSize: '0.74rem', padding: '0.3rem 0.6rem' }}
                       >
                         <Send size={12} />
-                        <span>WhatsApp</span>
+                        <span>{t.demandes.shareWhatsApp}</span>
                       </a>
                     </div>
                   )}
@@ -1340,9 +1332,7 @@ export const CreancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 4 : ENCAISSER UN PAIEMENT (COMPACT) */}
-      {/* ==================================================== */}
+      {/* MODAL 4 : ENCAISSER UN PAIEMENT */}
       {isPaymentModalOpen && selectedCreanceDetail && (
         <div
           style={{
@@ -1376,10 +1366,10 @@ export const CreancesPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div>
                 <h3 style={{ color: 'white', margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
-                  Encaisser un paiement
+                  {t.creances.recordPayment}
                 </h3>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Solde dû : <strong style={{ color: '#f87171' }}>{selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} FCFA</strong>
+                  {t.creances.remainingBalance} : <strong style={{ color: '#f87171' }}>{formatAmount(selectedCreanceDetail.creance.solde)} {t.common.currency}</strong>
                 </div>
               </div>
               <button type="button" onClick={() => setIsPaymentModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -1391,14 +1381,14 @@ export const CreancesPage: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                   <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                    Montant encaissé (FCFA) *
+                    {t.creances.paymentAmount} ({t.common.currency}) *
                   </label>
                   <button
                     type="button"
                     onClick={() => setPaymentForm({ ...paymentForm, montant: String(selectedCreanceDetail.creance.solde) })}
                     style={{ background: 'none', border: 'none', color: primaryColor, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    Tout solder ({selectedCreanceDetail.creance.solde.toLocaleString('fr-FR')} F)
+                    {t.creances.fullBalance} ({formatAmount(selectedCreanceDetail.creance.solde)} {t.common.currency})
                   </button>
                 </div>
                 <input
@@ -1406,37 +1396,36 @@ export const CreancesPage: React.FC = () => {
                   min="1"
                   max={selectedCreanceDetail.creance.solde}
                   required
-                  placeholder="Ex: 50000"
+                  placeholder="50000"
                   value={paymentForm.montant}
                   onChange={e => setPaymentForm({ ...paymentForm, montant: e.target.value })}
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.88rem', outline: 'none' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.88rem', outline: 'none', direction: 'ltr' }}
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                    Moyen de règlement *
+                    {t.common.paymentMethod} *
                   </label>
                   <select
                     value={paymentForm.moyen_paiement}
                     onChange={e => setPaymentForm({ ...paymentForm, moyen_paiement: e.target.value })}
                     style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-main)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.82rem', outline: 'none' }}
                   >
-                    <option value="especes">Espèces / Caisse</option>
+                    <option value="especes">{locale === 'ar' ? 'نقداً / بالصندوق' : 'Espèces / Caisse'}</option>
                     <option value="wave">Wave</option>
                     <option value="om">Orange Money</option>
                     <option value="momo">MTN MoMo</option>
-                    <option value="virement">Virement bancaire</option>
-                    <option value="cheque">Chèque</option>
-                    <option value="carte">Carte bancaire</option>
-                    <option value="autre">Autre</option>
+                    <option value="virement">{t.publicPayment.bankTransfer}</option>
+                    <option value="carte">{t.publicPayment.bankCard}</option>
+                    <option value="autre">{locale === 'ar' ? 'طريقة أخرى' : 'Autre'}</option>
                   </select>
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                    Date de règlement
+                    {t.creances.paymentDate}
                   </label>
                   <input
                     type="date"
@@ -1450,7 +1439,7 @@ export const CreancesPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                  Référence / Note
+                  {t.common.reference} / {t.common.notes}
                 </label>
                 <input
                   type="text"
@@ -1462,9 +1451,9 @@ export const CreancesPage: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.35rem' }}>
-                <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="btn btn-secondary btn-sm">Annuler</button>
+                <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="btn btn-secondary btn-sm">{t.common.cancel}</button>
                 <button type="submit" disabled={actionLoading} className="btn btn-primary btn-sm" style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}>
-                  {actionLoading ? 'Validation...' : 'Confirmer l\'encaissement'}
+                  {actionLoading ? t.common.saving : t.common.confirm}
                 </button>
               </div>
             </form>
@@ -1472,9 +1461,7 @@ export const CreancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 5 : CRÉER DEMANDE DE PAIEMENT POUR CRÉANCE     */}
-      {/* ==================================================== */}
+      {/* MODAL 5 : CRÉER DEMANDE DE PAIEMENT */}
       {isDemandeModalOpen && targetCreanceForDemande && (
         <div
           style={{
@@ -1509,10 +1496,10 @@ export const CreancesPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 style={{ color: 'white', margin: 0, fontSize: '1.02rem', fontWeight: 800 }}>
-                    Créer un lien de paiement
+                    {t.demandes.newLink}
                   </h3>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    Client : <strong>{targetCreanceForDemande.client_nom}</strong>
+                    {t.common.client} : <strong>{targetCreanceForDemande.client_nom}</strong>
                   </div>
                 </div>
               </div>
@@ -1524,7 +1511,7 @@ export const CreancesPage: React.FC = () => {
             <form onSubmit={handleSubmitCreateDemande} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                  Montant à payer (FCFA) *
+                  {t.demandes.requestedAmount} ({t.common.currency}) *
                 </label>
                 <input
                   type="number"
@@ -1533,16 +1520,16 @@ export const CreancesPage: React.FC = () => {
                   max={targetCreanceForDemande.solde > 0 ? targetCreanceForDemande.solde : undefined}
                   value={demandeForm.montant}
                   onChange={e => setDemandeForm({ ...demandeForm, montant: e.target.value })}
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', color: 'white', fontSize: '0.85rem', fontWeight: 700, outline: 'none', direction: 'ltr' }}
                 />
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                  Solde actuel de la créance : {targetCreanceForDemande.solde.toLocaleString('fr-FR')} FCFA
+                  {t.creances.remainingBalance} : {formatAmount(targetCreanceForDemande.solde)} {t.common.currency}
                 </div>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                  Motif visible par le client *
+                  {t.creances.motif} *
                 </label>
                 <input
                   type="text"
@@ -1555,7 +1542,7 @@ export const CreancesPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>
-                  Date d'expiration
+                  {t.demandes.expiresOn}
                 </label>
                 <input
                   type="date"
@@ -1567,10 +1554,10 @@ export const CreancesPage: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.35rem' }}>
-                <button type="button" onClick={() => setIsDemandeModalOpen(false)} className="btn btn-secondary btn-sm">Annuler</button>
+                <button type="button" onClick={() => setIsDemandeModalOpen(false)} className="btn btn-secondary btn-sm">{t.common.cancel}</button>
                 <button type="submit" disabled={actionLoading} className="btn btn-primary btn-sm" style={{ backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   {actionLoading ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                  <span>Générer le lien public</span>
+                  <span>{t.demandes.newLink}</span>
                 </button>
               </div>
             </form>
@@ -1578,9 +1565,7 @@ export const CreancesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 6 : CONFIRMATION LIEN DE PAIEMENT GÉNÉRÉ       */}
-      {/* ==================================================== */}
+      {/* MODAL 6 : CONFIRMATION LIEN GÉNÉRÉ */}
       {createdDemande && (
         <div
           style={{
@@ -1617,14 +1602,14 @@ export const CreancesPage: React.FC = () => {
             </div>
 
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0 }}>Lien de paiement créé !</h3>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0 }}>{t.demandes.createdModalTitle}</h3>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
-                Montant : <strong style={{ color: 'white' }}>{createdDemande.montant.toLocaleString('fr-FR')} FCFA</strong> • Client : <strong>{createdDemande.clientNom}</strong>
+                {t.common.amount} : <strong style={{ color: 'white' }}>{formatAmount(createdDemande.montant)} {t.common.currency}</strong> • {t.common.client} : <strong>{createdDemande.clientNom}</strong>
               </div>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.65rem 0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <div style={{ fontSize: '0.78rem', color: primaryColor, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.78rem', color: primaryColor, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', direction: 'ltr', textAlign: isRtl ? 'right' : 'left' }}>
                 {createdDemande.url}
               </div>
 
@@ -1639,7 +1624,7 @@ export const CreancesPage: React.FC = () => {
                 style={{ backgroundColor: primaryColor, borderColor: primaryColor, padding: '0.3rem 0.6rem', fontSize: '0.74rem', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
               >
                 {copiedLink ? <Check size={12} /> : <Copy size={12} />}
-                <span>{copiedLink ? 'Copié !' : 'Copier'}</span>
+                <span>{copiedLink ? t.common.copied : t.common.copy}</span>
               </button>
             </div>
 
@@ -1652,7 +1637,7 @@ export const CreancesPage: React.FC = () => {
                 style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
               >
                 <ExternalLink size={13} />
-                <span>Tester le lien</span>
+                <span>{t.demandes.openPublicPage}</span>
               </a>
 
               <button
@@ -1661,7 +1646,7 @@ export const CreancesPage: React.FC = () => {
                 className="btn btn-primary btn-sm"
                 style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', padding: '0.5rem', fontSize: '0.78rem' }}
               >
-                Fermer
+                {t.common.close}
               </button>
             </div>
           </div>

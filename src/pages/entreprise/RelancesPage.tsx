@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { apiRequest } from '../../services/api';
 import {
   BellRing,
@@ -13,6 +14,7 @@ import {
   Check,
   User,
   ArrowRight,
+  ArrowLeft,
   Filter,
   Search,
   Settings,
@@ -85,16 +87,6 @@ interface RelancesResponse {
   };
 }
 
-const ALL_MILESTONES = [
-  { id: 'J-7', label: 'J-7 (Préventif - 7 jours avant)' },
-  { id: 'J-3', label: 'J-3 (Rappel courtois - 3 jours avant)' },
-  { id: 'J0', label: "J0 (Jour d'échéance)" },
-  { id: 'J+3', label: 'J+3 (Première relance - 3 jours de retard)' },
-  { id: 'J+7', label: 'J+7 (Relance ferme - 7 jours de retard)' },
-  { id: 'J+14', label: 'J+14 (Mise en demeure - 14 jours de retard)' },
-  { id: 'J+30', label: 'J+30 (Dernier avis - 30 jours de retard)' },
-];
-
 function normalizeWhatsAppPhone(phone: string | null | undefined, defaultCountryCode = '225'): {
   normalized: string;
   isValid: boolean;
@@ -127,6 +119,7 @@ function normalizeWhatsAppPhone(phone: string | null | undefined, defaultCountry
 
 export const RelancesPage: React.FC = () => {
   const { company } = useAuth();
+  const { t, locale, isRtl } = useLanguage();
   const primaryColor = company?.couleur_principale || '#10b981';
 
   const [data, setData] = useState<RelancesResponse | null>(null);
@@ -160,6 +153,20 @@ export const RelancesPage: React.FC = () => {
   const [savingSettings, setSavingSettings] = useState(false);
   const [processingAuto, setProcessingAuto] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const formatAmount = (val: number) => {
+    return val.toLocaleString(locale === 'ar' ? 'ar-EG' : locale === 'en' ? 'en-US' : 'fr-FR');
+  };
+
+  const ALL_MILESTONES = [
+    { id: 'J-7', label: `J-7 (${t.relances.milestones.m_j_minus_7})` },
+    { id: 'J-3', label: `J-3 (${t.relances.milestones.m_j_minus_3})` },
+    { id: 'J0', label: `J0 (${t.relances.milestones.m_j_0})` },
+    { id: 'J+3', label: `J+3 (${t.relances.milestones.m_j_plus_3})` },
+    { id: 'J+7', label: `J+7 (${t.relances.milestones.m_j_plus_7})` },
+    { id: 'J+14', label: `J+14 (${t.relances.milestones.m_j_plus_14})` },
+    { id: 'J+30', label: `J+30 (${t.relances.milestones.m_j_plus_30})` },
+  ];
 
   const fetchRelances = async () => {
     try {
@@ -203,12 +210,53 @@ export const RelancesPage: React.FC = () => {
   };
 
   const getMessageTemplate = (creance: CreanceRelance) => {
-    const clientName = creance.client_nom || 'Client';
-    const compName = company?.nom || 'notre établissement';
-    const amount = creance.solde.toLocaleString('fr-FR');
+    const clientName = creance.client_nom || t.common.client;
+    const compName = company?.nom || 'Relancio';
+    const amount = formatAmount(creance.solde);
     const motif = creance.motif;
     const date = creance.date_echeance;
 
+    if (locale === 'ar') {
+      if (creance.statut === 'en_retard') {
+        switch (overdueTone) {
+          case 'amicale':
+            return `مرحباً ${clientName}، نود تذكيركم بأن فاتورتكم بشأن "${motif}" بمبلغ ${amount} ${t.common.currency} حل موعد استحقاقها في ${date}. نرجو منكم المبادرة بالسداد مع فائق الشكر، ${compName}.`;
+          case 'ferme':
+            return `تذكير هام: مرحباً ${clientName}، نلاحظ أن مستحقاتكم بقيمة ${amount} ${t.common.currency} (${motif}) لدى ${compName} لم تسدد بعد رغم تجاوز تاريخ الاستحقاق (${date}). يرجى السداد اليوم.`;
+          case 'mise_en_demeure':
+            return `عاجل - إنذار أخير: ${clientName}، تأخر سداد مستحقاتكم بقيمة ${amount} ${t.common.currency} لدى ${compName} بشأن "${motif}". نرجو السداد خلال 48 ساعة لتفادي اتخاذ الإجراءات النظامية.`;
+        }
+      } else {
+        switch (upcomingTone) {
+          case 'preventif':
+            return `مرحباً ${clientName}، نود تذكيركم بلطف بأن فاتورتكم بشأن "${motif}" (المتبقي ${amount} ${t.common.currency}) يحل أجلها في ${date}. شكراً لكم، ${compName}.`;
+          case 'info':
+            return `مرحباً ${clientName}، للإحاطة فإن موعد سداد مبلغ ${amount} ${t.common.currency} بشأن "${motif}" لدى ${compName} هو ${date}. نحن في خدمتكم لأي استفسار.`;
+        }
+      }
+    }
+
+    if (locale === 'en') {
+      if (creance.statut === 'en_retard') {
+        switch (overdueTone) {
+          case 'amicale':
+            return `Hello ${clientName}, this is a gentle reminder that your invoice for "${motif}" with a balance of ${amount} ${t.common.currency} was due on ${date}. Thank you for arranging payment. Best regards, ${compName}.`;
+          case 'ferme':
+            return `Important reminder: Hello ${clientName}, your receivable of ${amount} ${t.common.currency} (${motif}) with ${compName} remains unpaid past its due date of ${date}. Please make payment today.`;
+          case 'mise_en_demeure':
+            return `URGENT - FINAL NOTICE: ${clientName}, your overdue balance of ${amount} ${t.common.currency} at ${compName} for "${motif}" is delayed. Please settle within 48 hours to avoid escalation. Contact us immediately.`;
+        }
+      } else {
+        switch (upcomingTone) {
+          case 'preventif':
+            return `Hello ${clientName}, this is a friendly reminder that your invoice for "${motif}" (${amount} ${t.common.currency}) will be due on ${date}. Thank you, ${compName}.`;
+          case 'info':
+            return `Hello ${clientName}, for your information, payment of ${amount} ${t.common.currency} for "${motif}" is expected by ${date} at ${compName}. Feel free to contact us with any questions.`;
+        }
+      }
+    }
+
+    // Default French
     if (creance.statut === 'en_retard') {
       switch (overdueTone) {
         case 'amicale':
@@ -233,7 +281,6 @@ export const RelancesPage: React.FC = () => {
     const norm = normalizeWhatsAppPhone(rawPhone);
 
     if (!norm.isValid) {
-      // Missing or invalid phone -> open modal
       setMissingPhoneCreance(creance);
       setInputPhone(rawPhone);
       setPhoneError(null);
@@ -244,7 +291,6 @@ export const RelancesPage: React.FC = () => {
     const waUrl = `https://wa.me/${norm.normalized}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
 
-    // Record manual log in backend
     try {
       await apiRequest('/api/company/relances/manual-log', {
         method: 'POST',
@@ -255,7 +301,7 @@ export const RelancesPage: React.FC = () => {
         }),
       });
       fetchLogs();
-      showFeedback('success', `Relance WhatsApp manuelle ouverte pour ${creance.client_nom}`);
+      showFeedback('success', `${t.relances.sendWhatsApp} : ${creance.client_nom}`);
     } catch (err) {
       console.error('Erreur log relance manuelle:', err);
     }
@@ -267,7 +313,13 @@ export const RelancesPage: React.FC = () => {
 
     const norm = normalizeWhatsAppPhone(inputPhone);
     if (!norm.isValid) {
-      setPhoneError('Veuillez saisir un numéro de téléphone valide (ex: +225 07 12 34 56 78)');
+      setPhoneError(
+        locale === 'ar'
+          ? 'يرجى إدخال رقم هاتف صحيح'
+          : locale === 'en'
+          ? 'Please enter a valid phone number'
+          : 'Veuillez saisir un numéro de téléphone valide'
+      );
       return;
     }
 
@@ -275,7 +327,6 @@ export const RelancesPage: React.FC = () => {
       setSavingPhone(true);
       setPhoneError(null);
 
-      // Update client phone
       await apiRequest(`/api/company/clients/${missingPhoneCreance.client_id}`, {
         method: 'PUT',
         body: JSON.stringify({
@@ -286,7 +337,6 @@ export const RelancesPage: React.FC = () => {
       const message = getMessageTemplate(missingPhoneCreance);
       const waUrl = `https://wa.me/${norm.normalized}?text=${encodeURIComponent(message)}`;
 
-      // Record manual log
       await apiRequest('/api/company/relances/manual-log', {
         method: 'POST',
         body: JSON.stringify({
@@ -296,14 +346,13 @@ export const RelancesPage: React.FC = () => {
         }),
       });
 
-      // Update local state
       setMissingPhoneCreance(null);
       fetchRelances();
       fetchLogs();
-      showFeedback('success', 'Fiche client mise à jour et relance WhatsApp prête');
+      showFeedback('success', t.clients.updateSuccess);
       window.open(waUrl, '_blank');
     } catch (err: unknown) {
-      setPhoneError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour du client');
+      setPhoneError(err instanceof Error ? err.message : t.common.error);
     } finally {
       setSavingPhone(false);
     }
@@ -320,10 +369,10 @@ export const RelancesPage: React.FC = () => {
         }),
       });
       setIsSettingsOpen(false);
-      showFeedback('success', 'Paramètres de relances automatiques enregistrés avec succès');
+      showFeedback('success', t.relances.settingsSaved);
       fetchRelances();
     } catch (err: unknown) {
-      showFeedback('error', err instanceof Error ? err.message : 'Erreur sauvegarde paramètres');
+      showFeedback('error', err instanceof Error ? err.message : t.common.error);
     } finally {
       setSavingSettings(false);
     }
@@ -342,7 +391,7 @@ export const RelancesPage: React.FC = () => {
       fetchRelances();
       fetchLogs();
     } catch (err: unknown) {
-      showFeedback('error', err instanceof Error ? err.message : 'Erreur traitement automatique');
+      showFeedback('error', err instanceof Error ? err.message : t.common.error);
     } finally {
       setProcessingAuto(false);
     }
@@ -405,7 +454,7 @@ export const RelancesPage: React.FC = () => {
           style={{
             position: 'fixed',
             top: '20px',
-            right: '20px',
+            [isRtl ? 'left' : 'right']: '20px',
             zIndex: 9999,
             background: actionFeedback.type === 'success' ? '#065f46' : '#991b1b',
             color: 'white',
@@ -418,7 +467,6 @@ export const RelancesPage: React.FC = () => {
             fontSize: '0.85rem',
             fontWeight: 600,
             border: actionFeedback.type === 'success' ? '1px solid #10b981' : '1px solid #ef4444',
-            animation: 'fadeIn 0.2s ease',
           }}
         >
           {actionFeedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -459,7 +507,7 @@ export const RelancesPage: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-                Relances & Recouvrement
+                {t.relances.title}
               </h1>
               {data && (
                 <span
@@ -473,8 +521,7 @@ export const RelancesPage: React.FC = () => {
                     fontWeight: 700,
                   }}
                 >
-                  {data.summary.allUnpaidCount} créance{data.summary.allUnpaidCount > 1 ? 's' : ''} non soldée
-                  {data.summary.allUnpaidCount > 1 ? 's' : ''}
+                  {data.summary.allUnpaidCount} {t.creances.title}
                 </span>
               )}
               {autoActive ? (
@@ -489,7 +536,7 @@ export const RelancesPage: React.FC = () => {
                     fontWeight: 600,
                   }}
                 >
-                  Auto : Activé ({selectedMilestones.length} échéances)
+                  {t.common.active} ({selectedMilestones.length})
                 </span>
               ) : (
                 <span
@@ -502,12 +549,12 @@ export const RelancesPage: React.FC = () => {
                     fontWeight: 600,
                   }}
                 >
-                  Auto : Désactivé
+                  {t.common.inactive}
                 </span>
               )}
             </div>
             <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-              Relances WhatsApp manuelles & automatisées aux échéances J-7, J-3, J0, J+3, J+7, J+14, J+30
+              {t.relances.subtitle}
             </div>
           </div>
         </div>
@@ -515,7 +562,7 @@ export const RelancesPage: React.FC = () => {
         {/* Global Action & Summary KPIs */}
         {data && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: isRtl ? 'left' : 'right' }}>
               <div
                 style={{
                   fontSize: '0.68rem',
@@ -524,7 +571,7 @@ export const RelancesPage: React.FC = () => {
                   letterSpacing: '0.5px',
                 }}
               >
-                Total en retard
+                {t.creances.filterOverdue}
               </div>
               <div
                 style={{
@@ -533,13 +580,13 @@ export const RelancesPage: React.FC = () => {
                   color: data.summary.totalOverdueAmount > 0 ? '#f87171' : '#34d399',
                 }}
               >
-                {data.summary.totalOverdueAmount.toLocaleString('fr-FR')} FCFA
+                {formatAmount(data.summary.totalOverdueAmount)} {t.common.currency}
               </div>
             </div>
 
             <div style={{ height: '24px', width: '1px', background: 'var(--border-subtle)' }} />
 
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: isRtl ? 'left' : 'right' }}>
               <div
                 style={{
                   fontSize: '0.68rem',
@@ -548,10 +595,10 @@ export const RelancesPage: React.FC = () => {
                   letterSpacing: '0.5px',
                 }}
               >
-                Échéances à venir
+                {t.relances.upcomingDue}
               </div>
               <div style={{ fontSize: '1rem', fontWeight: 800, color: '#60a5fa' }}>
-                {data.summary.totalUpcomingAmount.toLocaleString('fr-FR')} FCFA
+                {formatAmount(data.summary.totalUpcomingAmount)} {t.common.currency}
               </div>
             </div>
 
@@ -571,10 +618,10 @@ export const RelancesPage: React.FC = () => {
                 fontSize: '0.76rem',
                 fontWeight: 700,
               }}
-              title="Exécuter les relances automatiques du jour"
+              title={t.relances.tabAutomated}
             >
               <Play size={13} className={processingAuto ? 'animate-spin' : ''} />
-              <span>{processingAuto ? 'Traitement...' : 'Exécuter Auto'}</span>
+              <span>{processingAuto ? t.common.loading : t.relances.tabAutomated}</span>
             </button>
 
             {/* Settings button */}
@@ -583,7 +630,7 @@ export const RelancesPage: React.FC = () => {
               onClick={() => setIsSettingsOpen(true)}
               className="btn btn-secondary btn-sm"
               style={{ padding: '0.4rem 0.65rem' }}
-              title="Paramètres d'automatisation"
+              title={t.settings.title}
             >
               <Settings size={14} />
             </button>
@@ -597,7 +644,7 @@ export const RelancesPage: React.FC = () => {
               }}
               className="btn btn-secondary btn-sm"
               style={{ padding: '0.4rem 0.65rem' }}
-              title="Actualiser les données"
+              title={t.common.refresh}
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
@@ -640,7 +687,7 @@ export const RelancesPage: React.FC = () => {
             }}
           >
             <AlertTriangle size={13} />
-            <span>En retard (Urgent)</span>
+            <span>{t.relances.criticalOverdue}</span>
             <span
               style={{
                 fontSize: '0.68rem',
@@ -674,7 +721,7 @@ export const RelancesPage: React.FC = () => {
             }}
           >
             <Clock size={13} />
-            <span>Échéances à venir</span>
+            <span>{t.relances.upcomingDue}</span>
             <span
               style={{
                 fontSize: '0.68rem',
@@ -708,7 +755,7 @@ export const RelancesPage: React.FC = () => {
             }}
           >
             <Filter size={13} />
-            <span>Toutes les créances dues</span>
+            <span>{t.relances.allUnpaid}</span>
             <span
               style={{
                 fontSize: '0.68rem',
@@ -742,7 +789,7 @@ export const RelancesPage: React.FC = () => {
             }}
           >
             <History size={13} />
-            <span>Historique des relances</span>
+            <span>{t.relances.tabHistory}</span>
             <span
               style={{
                 fontSize: '0.68rem',
@@ -761,17 +808,17 @@ export const RelancesPage: React.FC = () => {
         {/* Search input & Tone Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <Search size={13} style={{ position: 'absolute', left: '0.55rem', color: 'var(--text-muted)' }} />
+            <Search size={13} style={{ position: 'absolute', [isRtl ? 'right' : 'left']: '0.55rem', color: 'var(--text-muted)' }} />
             <input
               type="text"
-              placeholder="Filtrer client, motif..."
+              placeholder={`${t.common.search}...`}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-sm)',
-                padding: '0.28rem 0.55rem 0.28rem 1.75rem',
+                padding: isRtl ? '0.28rem 1.75rem 0.28rem 0.55rem' : '0.28rem 0.55rem 0.28rem 1.75rem',
                 fontSize: '0.74rem',
                 color: 'white',
                 outline: 'none',
@@ -782,7 +829,7 @@ export const RelancesPage: React.FC = () => {
 
           {activeTab !== 'history' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Tonalité :</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t.relances.previewMessage} :</span>
               {activeTab === 'overdue' ? (
                 <div
                   style={{
@@ -806,7 +853,7 @@ export const RelancesPage: React.FC = () => {
                       color: overdueTone === 'amicale' ? '#34d399' : 'var(--text-secondary)',
                     }}
                   >
-                    Amicale (J+1)
+                    {locale === 'ar' ? 'ودية (J+1)' : 'Amicale (J+1)'}
                   </button>
                   <button
                     type="button"
@@ -822,7 +869,7 @@ export const RelancesPage: React.FC = () => {
                       color: overdueTone === 'ferme' ? '#fbbf24' : 'var(--text-secondary)',
                     }}
                   >
-                    Ferme (J+7)
+                    {locale === 'ar' ? 'حازمة (J+7)' : 'Ferme (J+7)'}
                   </button>
                   <button
                     type="button"
@@ -838,7 +885,7 @@ export const RelancesPage: React.FC = () => {
                       color: overdueTone === 'mise_en_demeure' ? '#f87171' : 'var(--text-secondary)',
                     }}
                   >
-                    Dernier avis (J+15)
+                    {locale === 'ar' ? 'إنذار أخير (J+15)' : 'Dernier avis (J+15)'}
                   </button>
                 </div>
               ) : (
@@ -864,7 +911,7 @@ export const RelancesPage: React.FC = () => {
                       color: upcomingTone === 'preventif' ? '#60a5fa' : 'var(--text-secondary)',
                     }}
                   >
-                    Préventif (J-3)
+                    {locale === 'ar' ? 'تذكير وقائي (J-3)' : 'Préventif (J-3)'}
                   </button>
                   <button
                     type="button"
@@ -880,7 +927,7 @@ export const RelancesPage: React.FC = () => {
                       color: upcomingTone === 'info' ? '#34d399' : 'var(--text-secondary)',
                     }}
                   >
-                    Info Échéance
+                    {locale === 'ar' ? 'إشعار بالموعد' : 'Info Échéance'}
                   </button>
                 </div>
               )}
@@ -893,14 +940,14 @@ export const RelancesPage: React.FC = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <Sparkles className="animate-spin" size={26} color={primaryColor} style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ fontSize: '0.88rem' }}>Analyse des échéances et créances en cours...</div>
+          <div style={{ fontSize: '0.88rem' }}>{t.common.loading}</div>
         </div>
       ) : activeTab === 'history' ? (
         /* HISTORIQUE TAB */
         logsLoading ? (
           <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
             <Sparkles className="animate-spin" size={22} color={primaryColor} style={{ margin: '0 auto 0.5rem auto' }} />
-            <div style={{ fontSize: '0.84rem' }}>Chargement de l'historique des relances...</div>
+            <div style={{ fontSize: '0.84rem' }}>{t.common.loading}</div>
           </div>
         ) : displayedLogs.length === 0 ? (
           <div
@@ -913,9 +960,9 @@ export const RelancesPage: React.FC = () => {
             }}
           >
             <History size={32} color="var(--text-muted)" style={{ margin: '0 auto 0.65rem auto' }} />
-            <div style={{ color: 'white', fontWeight: 700, fontSize: '0.98rem' }}>Aucune relance dans l'historique</div>
+            <div style={{ color: 'white', fontWeight: 700, fontSize: '0.98rem' }}>{t.relances.noLogsFound}</div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.3rem' }}>
-              Les relances manuelles et automatiques envoyées apparaîtront ici avec leur statut d'envoi.
+              {t.relances.logsSubtitle}
             </div>
           </div>
         ) : (
@@ -923,7 +970,7 @@ export const RelancesPage: React.FC = () => {
             {displayedLogs.map(log => {
               const isSuccess = log.statut === 'envoye';
               const isAuto = log.type === 'auto';
-              const formattedDate = new Date(log.created_at).toLocaleString('fr-FR', {
+              const formattedDate = new Date(log.created_at).toLocaleString(locale === 'ar' ? 'ar-EG' : locale === 'en' ? 'en-US' : 'fr-FR', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
@@ -980,7 +1027,7 @@ export const RelancesPage: React.FC = () => {
                           }}
                         >
                           <CheckCircle2 size={11} />
-                          <span>Envoyé</span>
+                          <span>{t.relances.statusSent}</span>
                         </span>
                       ) : (
                         <span
@@ -998,7 +1045,7 @@ export const RelancesPage: React.FC = () => {
                           title={log.motif_echec}
                         >
                           <AlertCircle size={11} />
-                          <span>Échec : {log.motif_echec || 'Non envoyé'}</span>
+                          <span>{t.relances.statusFailed} : {log.motif_echec || 'Non envoyé'}</span>
                         </span>
                       )}
 
@@ -1006,8 +1053,8 @@ export const RelancesPage: React.FC = () => {
                     </div>
 
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                      Numéro : <strong>{log.telephone_normalise || log.client_telephone || 'Non renseigné'}</strong> •
-                      Solde : <strong style={{ color: '#f87171' }}>{log.montant_solde.toLocaleString('fr-FR')} F</strong>
+                      {t.common.phone} : <strong style={{ direction: 'ltr', display: 'inline-block' }}>{log.telephone_normalise || log.client_telephone || 'N/A'}</strong> •
+                      {t.creances.remainingBalance} : <strong style={{ color: '#f87171' }}>{formatAmount(log.montant_solde)} {t.common.currency}</strong>
                     </div>
 
                     {/* Preview message */}
@@ -1033,10 +1080,10 @@ export const RelancesPage: React.FC = () => {
                       onClick={() => copyToClipboard(log.message, log.id)}
                       className="btn btn-secondary btn-sm"
                       style={{ padding: '0.35rem 0.55rem', fontSize: '0.72rem' }}
-                      title="Copier le message"
+                      title={t.common.copy}
                     >
                       {copiedId === log.id ? <Check size={12} color="#34d399" /> : <Copy size={12} />}
-                      <span>{copiedId === log.id ? 'Copié' : 'Copier'}</span>
+                      <span>{copiedId === log.id ? t.common.copied : t.common.copy}</span>
                     </button>
 
                     {log.telephone_normalise && (
@@ -1056,7 +1103,7 @@ export const RelancesPage: React.FC = () => {
                         }}
                       >
                         <ExternalLink size={12} />
-                        <span>Ouvrir</span>
+                        <span>{t.common.details}</span>
                       </a>
                     )}
                   </div>
@@ -1066,7 +1113,7 @@ export const RelancesPage: React.FC = () => {
           </div>
         )
       ) : data?.summary.isFullyUpToDate ? (
-        /* GLOBAL EMPTY STATE: When truly 0 unpaid debts */
+        /* GLOBAL EMPTY STATE */
         <div
           style={{
             background: 'var(--bg-surface)',
@@ -1077,7 +1124,7 @@ export const RelancesPage: React.FC = () => {
           }}
         >
           <CheckCircle2 size={36} color="#34d399" style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.05rem' }}>Tous les paiements sont à jour !</div>
+          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.05rem' }}>{t.relances.allDebtsSettled}</div>
           <div
             style={{
               color: 'var(--text-secondary)',
@@ -1087,8 +1134,7 @@ export const RelancesPage: React.FC = () => {
               margin: '0.35rem auto 0 auto',
             }}
           >
-            Félicitations ! Toutes les créances de votre établissement sont entièrement soldées. Aucun paiement n'est en
-            attente ni en retard.
+            {t.relances.congratulationsNoDebts}
           </div>
         </div>
       ) : displayedList.length === 0 ? (
@@ -1105,11 +1151,9 @@ export const RelancesPage: React.FC = () => {
           {activeTab === 'overdue' ? (
             <>
               <CheckCircle2 size={32} color="#34d399" style={{ margin: '0 auto 0.65rem auto' }} />
-              <div style={{ color: 'white', fontWeight: 700, fontSize: '0.98rem' }}>Aucune créance en retard !</div>
+              <div style={{ color: 'white', fontWeight: 700, fontSize: '0.98rem' }}>{t.relances.upToDate}</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.3rem' }}>
-                Tous les paiements échus sont réglés. Vous avez néanmoins{' '}
-                <strong style={{ color: '#60a5fa' }}>{data?.summary.upcomingCount || 0} créance(s) en attente d'échéance</strong>{' '}
-                (Total : {data?.summary.totalUpcomingAmount.toLocaleString('fr-FR')} FCFA).
+                {t.relances.allDebtsSettled}
               </div>
               <button
                 type="button"
@@ -1117,30 +1161,27 @@ export const RelancesPage: React.FC = () => {
                 className="btn btn-secondary btn-sm"
                 style={{ marginTop: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
               >
-                <span>Consulter les échéances à venir</span>
-                <ArrowRight size={13} />
+                <span>{t.relances.upcomingDue}</span>
+                {isRtl ? <ArrowLeft size={13} /> : <ArrowRight size={13} />}
               </button>
             </>
           ) : activeTab === 'upcoming' ? (
             <>
               <Clock size={32} color="#60a5fa" style={{ margin: '0 auto 0.65rem auto' }} />
-              <div style={{ color: 'white', fontWeight: 700, fontSize: '0.98rem' }}>Aucune échéance à venir</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.3rem' }}>
-                Toutes vos créances non soldées ont déjà dépassé leur date d'échéance.
-              </div>
+              <div style={{ color: 'white', fontWeight: 700, fontSize: '0.98rem' }}>{t.common.noData}</div>
               <button
                 type="button"
                 onClick={() => setActiveTab('overdue')}
                 className="btn btn-secondary btn-sm"
                 style={{ marginTop: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
               >
-                <span>Voir les créances en retard</span>
-                <ArrowRight size={13} />
+                <span>{t.relances.criticalOverdue}</span>
+                {isRtl ? <ArrowLeft size={13} /> : <ArrowRight size={13} />}
               </button>
             </>
           ) : (
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              Aucun résultat ne correspond à votre recherche.
+              {t.common.noData}
             </div>
           )}
         </div>
@@ -1184,7 +1225,7 @@ export const RelancesPage: React.FC = () => {
                       }}
                     >
                       <User size={14} color="var(--text-secondary)" />
-                      {creance.client_nom || 'Client'}
+                      {creance.client_nom || t.common.client}
                     </span>
 
                     {/* Status Badge */}
@@ -1200,7 +1241,7 @@ export const RelancesPage: React.FC = () => {
                           border: '1px solid rgba(239, 68, 68, 0.3)',
                         }}
                       >
-                        En retard (Échue le {creance.date_echeance})
+                        {t.common.statusLabels.en_retard} ({creance.date_echeance})
                       </span>
                     ) : (
                       <span
@@ -1214,7 +1255,7 @@ export const RelancesPage: React.FC = () => {
                           border: '1px solid rgba(59, 130, 246, 0.3)',
                         }}
                       >
-                        À venir (Échéance le {creance.date_echeance})
+                        {t.relances.upcomingDue} ({creance.date_echeance})
                       </span>
                     )}
 
@@ -1229,17 +1270,17 @@ export const RelancesPage: React.FC = () => {
                           fontWeight: 700,
                         }}
                       >
-                        Acompte de {creance.montant_paye.toLocaleString('fr-FR')} F versé
+                        {t.creances.paidAmount} : {formatAmount(creance.montant_paye)} {t.common.currency}
                       </span>
                     )}
                   </div>
 
                   <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                    <strong>{creance.motif}</strong> • Tél :{' '}
+                    <strong>{creance.motif}</strong> • {t.common.phone} :{' '}
                     {hasValidPhone ? (
-                      <strong style={{ color: '#34d399' }}>+{norm.normalized}</strong>
+                      <strong style={{ color: '#34d399', direction: 'ltr', display: 'inline-block' }}>+{norm.normalized}</strong>
                     ) : (
-                      <span style={{ color: '#f87171', fontWeight: 600 }}>Numéro manquant ou incomplet</span>
+                      <span style={{ color: '#f87171', fontWeight: 600 }}>{locale === 'ar' ? 'رقم الهاتف غير مسجل' : 'Numéro manquant'}</span>
                     )}
                   </div>
 
@@ -1263,10 +1304,10 @@ export const RelancesPage: React.FC = () => {
                 </div>
 
                 {/* Balance and Action buttons */}
-                <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1.15rem' }}>
+                <div style={{ textAlign: isRtl ? 'left' : 'right', display: 'flex', alignItems: 'center', gap: '1.15rem' }}>
                   <div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      Solde restant dû
+                      {t.creances.remainingBalance}
                     </div>
                     <div
                       style={{
@@ -1276,10 +1317,10 @@ export const RelancesPage: React.FC = () => {
                         lineHeight: 1.1,
                       }}
                     >
-                      {creance.solde.toLocaleString('fr-FR')} F
+                      {formatAmount(creance.solde)} {t.common.currency}
                     </div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                      Total facture : {creance.montant_total.toLocaleString('fr-FR')} F
+                      {t.creances.initialAmount} : {formatAmount(creance.montant_total)} {t.common.currency}
                     </div>
                   </div>
 
@@ -1290,10 +1331,10 @@ export const RelancesPage: React.FC = () => {
                       onClick={() => copyToClipboard(message, creance.id)}
                       className="btn btn-secondary btn-sm"
                       style={{ padding: '0.4rem 0.6rem', fontSize: '0.74rem' }}
-                      title="Copier le message de relance"
+                      title={t.common.copy}
                     >
                       {copiedId === creance.id ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
-                      <span>{copiedId === creance.id ? 'Copié !' : 'Copier'}</span>
+                      <span>{copiedId === creance.id ? t.common.copied : t.common.copy}</span>
                     </button>
 
                     <button
@@ -1311,10 +1352,10 @@ export const RelancesPage: React.FC = () => {
                         fontWeight: 700,
                         cursor: 'pointer',
                       }}
-                      title={hasValidPhone ? 'Ouvrir WhatsApp' : 'Ajouter le numéro WhatsApp'}
+                      title={hasValidPhone ? 'WhatsApp' : t.common.edit}
                     >
                       <Send size={13} />
-                      <span>{hasValidPhone ? 'Relancer WhatsApp' : 'Ajouter Tél & WhatsApp'}</span>
+                      <span>{hasValidPhone ? t.relances.sendWhatsApp : t.common.phone}</span>
                     </button>
                   </div>
                 </div>
@@ -1354,7 +1395,7 @@ export const RelancesPage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Phone size={18} color="#22c55e" />
                 <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'white', margin: 0 }}>
-                  Numéro WhatsApp du client
+                  {t.common.phone} (WhatsApp)
                 </h2>
               </div>
               <button
@@ -1367,15 +1408,17 @@ export const RelancesPage: React.FC = () => {
             </div>
 
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0 0 1rem 0' }}>
-              Aucun numéro WhatsApp valide n'est enregistré pour{' '}
-              <strong style={{ color: 'white' }}>{missingPhoneCreance.client_nom}</strong>. Renseignez-le ci-dessous
-              pour mettre à jour la fiche client et ouvrir immédiatement la conversation WhatsApp.
+              {locale === 'ar'
+                ? `يرجى إدخال رقم هاتف صحيح لـ ${missingPhoneCreance.client_nom} للمتابعة عبر واتساب:`
+                : locale === 'en'
+                ? `Please enter a valid WhatsApp phone number for ${missingPhoneCreance.client_nom}:`
+                : `Veuillez saisir un numéro de téléphone WhatsApp valide pour ${missingPhoneCreance.client_nom} :`}
             </p>
 
             <form onSubmit={handleSavePhoneAndSend} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Numéro WhatsApp (avec indicatif pays, ex: +225 07 11 22 33 44) :
+                  {t.common.phone} (WhatsApp) :
                 </label>
                 <input
                   type="text"
@@ -1395,6 +1438,8 @@ export const RelancesPage: React.FC = () => {
                     fontSize: '0.9rem',
                     color: 'white',
                     outline: 'none',
+                    direction: 'ltr',
+                    textAlign: isRtl ? 'right' : 'left',
                   }}
                 />
                 {phoneError && (
@@ -1409,7 +1454,7 @@ export const RelancesPage: React.FC = () => {
                   className="btn btn-secondary btn-sm"
                   style={{ padding: '0.5rem 1rem' }}
                 >
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
@@ -1422,7 +1467,7 @@ export const RelancesPage: React.FC = () => {
                     fontWeight: 700,
                   }}
                 >
-                  {savingPhone ? 'Enregistrement...' : 'Enregistrer et ouvrir WhatsApp'}
+                  {savingPhone ? t.common.saving : t.relances.sendWhatsApp}
                 </button>
               </div>
             </form>
@@ -1460,7 +1505,7 @@ export const RelancesPage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Settings size={18} color={primaryColor} />
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'white', margin: 0 }}>
-                  Automatisation des relances WhatsApp
+                  {t.relances.automatedTitle}
                 </h2>
               </div>
               <button
@@ -1473,8 +1518,7 @@ export const RelancesPage: React.FC = () => {
             </div>
 
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 1.25rem 0' }}>
-              Configurez les relances WhatsApp automatiques pour votre entreprise. Le système vérifie quotidiennement le
-              solde et envoie les messages aux échéances activées.
+              {t.relances.automatedSubtitle}
             </p>
 
             {/* Global toggle */}
@@ -1494,12 +1538,10 @@ export const RelancesPage: React.FC = () => {
             >
               <div>
                 <div style={{ fontWeight: 700, color: 'white', fontSize: '0.88rem' }}>
-                  Activer le module de relances automatiques
+                  {t.relances.enableAutomation}
                 </div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                  {autoActive
-                    ? 'Le moteur de relances évaluera quotidiennement toutes vos créances actives.'
-                    : 'Les relances automatiques sont désactivées pour votre entreprise.'}
+                  {autoActive ? t.relances.activeAutomationNotice : t.relances.inactiveAutomationNotice}
                 </div>
               </div>
               <div
@@ -1520,7 +1562,7 @@ export const RelancesPage: React.FC = () => {
                     background: 'white',
                     position: 'absolute',
                     top: '3px',
-                    left: autoActive ? '21px' : '3px',
+                    left: autoActive ? (isRtl ? '3px' : '21px') : (isRtl ? '21px' : '3px'),
                     transition: 'left 0.2s ease',
                   }}
                 />
@@ -1530,7 +1572,7 @@ export const RelancesPage: React.FC = () => {
             {/* Milestones list */}
             <div style={{ marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'white', marginBottom: '0.6rem' }}>
-                Échéances actives pour l'envoi automatique :
+                {t.relances.milestonesTitle}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                 {ALL_MILESTONES.map(m => {
@@ -1568,7 +1610,7 @@ export const RelancesPage: React.FC = () => {
                 className="btn btn-secondary btn-sm"
                 style={{ padding: '0.5rem 1rem' }}
               >
-                Annuler
+                {t.common.cancel}
               </button>
               <button
                 type="button"
@@ -1582,7 +1624,7 @@ export const RelancesPage: React.FC = () => {
                   fontWeight: 700,
                 }}
               >
-                {savingSettings ? 'Enregistrement...' : 'Enregistrer les préférences'}
+                {savingSettings ? t.common.saving : t.relances.saveAutoSettings}
               </button>
             </div>
           </div>

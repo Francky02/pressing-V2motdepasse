@@ -137,6 +137,15 @@ export interface ActivityLog {
   created_at: string;
 }
 
+export interface PasswordResetToken {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  expires_at: string;
+  used: boolean;
+  created_at: string;
+}
+
 export interface DatabaseSchema {
   users: User[];
   entreprises: Entreprise[];
@@ -146,4 +155,5 @@ export interface DatabaseSchema {
   demandes_paiement?: DemandePaiement[];
   relances_logs?: RelanceLog[];
   activity_logs: ActivityLog[];
+  password_reset_tokens?: PasswordResetToken[];
 }

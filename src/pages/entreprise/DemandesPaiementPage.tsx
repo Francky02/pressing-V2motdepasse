@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   Link2,
   Search,
@@ -32,6 +33,7 @@ interface CreanceOption {
 
 export const DemandesPaiementPage: React.FC = () => {
   const { company } = useAuth();
+  const { t, locale, isRTL } = useLanguage();
   const primaryColor = company?.couleur_principale || '#10b981';
 
   const [demandes, setDemandes] = useState<DemandePaiementItem[]>([]);
@@ -71,7 +73,7 @@ export const DemandesPaiementPage: React.FC = () => {
       setDemandes(demandesRes.demandes);
       setCreances(creancesRes.creances.filter(c => c.solde > 0));
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur chargement des demandes de paiement');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,7 @@ export const DemandesPaiementPage: React.FC = () => {
     const selected = creances.find(c => c.id === creanceId);
     if (selected) {
       setCustomMontant(selected.solde.toString());
-      setCustomMotif(`Paiement - ${selected.motif}`);
+      setCustomMotif(`${selected.motif}`);
     }
   };
 
@@ -101,13 +103,13 @@ export const DemandesPaiementPage: React.FC = () => {
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCreanceId) {
-      setErrorMsg('Veuillez sélectionner une créance');
+      setErrorMsg(t.creances.selectClient);
       return;
     }
 
     const amount = Number(customMontant);
     if (isNaN(amount) || amount <= 0) {
-      setErrorMsg('Veuillez saisir un montant supérieur à zéro');
+      setErrorMsg(t.common.error);
       return;
     }
 
@@ -129,7 +131,7 @@ export const DemandesPaiementPage: React.FC = () => {
         }
       );
 
-      setSuccessMsg('Lien de paiement généré avec succès !');
+      setSuccessMsg(t.demandes.createSuccess);
       setCreatedDemandeResult(res);
       setIsCreateModalOpen(false);
 
@@ -142,24 +144,24 @@ export const DemandesPaiementPage: React.FC = () => {
       // Refresh list
       await fetchData();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de la création');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleCancelDemande = async (id: string) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir annuler cette demande de paiement ? Le lien public deviendra inactif.')) {
+    if (!window.confirm(t.demandes.cancelConfirm)) {
       return;
     }
 
     try {
       setActionLoading(true);
       await apiRequest(`/api/company/demandes-paiement/${id}/annuler`, { method: 'PATCH' });
-      setSuccessMsg('Demande de paiement annulée');
+      setSuccessMsg(t.demandes.cancelSuccess);
       await fetchData();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de l\'annulation');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
     }
@@ -173,8 +175,15 @@ export const DemandesPaiementPage: React.FC = () => {
 
   const openWhatsAppShare = (d: DemandePaiementItem) => {
     const fullUrl = `${window.location.origin}/payer/${d.token}`;
-    const clientName = d.client_nom || 'Client';
-    const message = `Bonjour ${clientName}, voici votre lien de paiement sécurisé de ${d.montant.toLocaleString('fr-FR')} FCFA (${d.motif}) émis par ${company?.nom || 'notre établissement'} : ${fullUrl}`;
+    const clientName = d.client_nom || t.common.client;
+    let message = '';
+    if (locale === 'ar') {
+      message = `مرحباً ${clientName}، إليك رابط الدفع الآمن بمبلغ ${d.montant.toLocaleString()} ${t.common.currency} (${d.motif}) الصادر من ${company?.nom || ''} : ${fullUrl}`;
+    } else if (locale === 'en') {
+      message = `Hello ${clientName}, here is your secure payment link for ${d.montant.toLocaleString()} ${t.common.currency} (${d.motif}) from ${company?.nom || ''}: ${fullUrl}`;
+    } else {
+      message = `Bonjour ${clientName}, voici votre lien de paiement sécurisé de ${d.montant.toLocaleString()} ${t.common.currency} (${d.motif}) émis par ${company?.nom || 'notre établissement'} : ${fullUrl}`;
+    }
     const cleanPhone = (d.client_telephone || '').replace(/[^0-9]/g, '');
     const waUrl = cleanPhone
       ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
@@ -223,31 +232,31 @@ export const DemandesPaiementPage: React.FC = () => {
       case 'payee':
         return (
           <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <CheckCircle2 size={11} /> Payée
+            <CheckCircle2 size={11} /> {t.common.statusLabels.payee}
           </span>
         );
       case 'partiellement_payee':
         return (
           <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Clock size={11} /> Partielle
+            <Clock size={11} /> {t.common.statusLabels.partiellement_payee}
           </span>
         );
       case 'expiree':
         return (
           <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Clock size={11} /> Expirée
+            <Clock size={11} /> {t.common.statusLabels.expire}
           </span>
         );
       case 'annulee':
         return (
           <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Ban size={11} /> Annulée
+            <Ban size={11} /> {t.common.statusLabels.annule}
           </span>
         );
       default:
         return (
           <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Clock size={11} /> En attente
+            <Clock size={11} /> {t.common.statusLabels.en_attente}
           </span>
         );
     }
@@ -260,7 +269,7 @@ export const DemandesPaiementPage: React.FC = () => {
         <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
           <AlertTriangle size={15} />
           <span>{errorMsg}</span>
-          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
+          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginInlineStart: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
@@ -268,7 +277,7 @@ export const DemandesPaiementPage: React.FC = () => {
         <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
           <CheckCircle2 size={15} />
           <span>{successMsg}</span>
-          <button type="button" onClick={() => setSuccessMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
+          <button type="button" onClick={() => setSuccessMsg(null)} style={{ marginInlineStart: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
@@ -293,14 +302,14 @@ export const DemandesPaiementPage: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-                Demandes & Liens de Paiement
+                {t.demandes.title}
               </h1>
               <span style={{ fontSize: '0.72rem', color: primaryColor, background: `${primaryColor}20`, padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
                 {filteredDemandes.length}
               </span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Générez des liens sécurisés personnalisés envoyés à vos clients pour faciliter leur règlement
+              {t.demandes.subtitle}
             </div>
           </div>
         </div>
@@ -308,12 +317,12 @@ export const DemandesPaiementPage: React.FC = () => {
         {/* KPIs quick view */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '0.3rem 0.6rem', fontSize: '0.74rem' }}>
-            <span style={{ color: 'var(--text-muted)' }}>En attente : </span>
-            <strong style={{ color: '#fbbf24' }}>{kpis.pendingAmount.toLocaleString('fr-FR')} F</strong> ({kpis.pendingCount})
+            <span style={{ color: 'var(--text-muted)' }}>{t.common.statusLabels.en_attente} : </span>
+            <strong style={{ color: '#fbbf24' }}>{kpis.pendingAmount.toLocaleString()} {t.common.currency}</strong> ({kpis.pendingCount})
           </div>
 
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '0.3rem 0.6rem', fontSize: '0.74rem' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Payées : </span>
+            <span style={{ color: 'var(--text-muted)' }}>{t.common.statusLabels.payee} : </span>
             <strong style={{ color: '#34d399' }}>{kpis.paidCount}</strong>
           </div>
 
@@ -324,7 +333,7 @@ export const DemandesPaiementPage: React.FC = () => {
             style={{ backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
           >
             <Plus size={14} />
-            <span>Créer un lien de paiement</span>
+            <span>{t.demandes.newLink}</span>
           </button>
         </div>
       </div>
@@ -361,7 +370,7 @@ export const DemandesPaiementPage: React.FC = () => {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Rechercher client, motif, token..."
+              placeholder={t.common.search}
               style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.82rem', width: '100%', outline: 'none' }}
             />
             {search && (
@@ -375,11 +384,11 @@ export const DemandesPaiementPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(255,255,255,0.02)', padding: '0.2rem', borderRadius: '6px' }}>
             <Filter size={12} color="var(--text-muted)" style={{ margin: '0 0.25rem' }} />
             {[
-              { id: 'toutes', label: 'Toutes' },
-              { id: 'en_attente', label: 'En attente' },
-              { id: 'payee', label: 'Payées' },
-              { id: 'expiree', label: 'Expirées' },
-              { id: 'annulee', label: 'Annulées' },
+              { id: 'toutes', label: t.common.all },
+              { id: 'en_attente', label: t.common.statusLabels.en_attente },
+              { id: 'payee', label: t.common.statusLabels.payee },
+              { id: 'expiree', label: t.common.statusLabels.expire },
+              { id: 'annulee', label: t.common.statusLabels.annule },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -407,7 +416,7 @@ export const DemandesPaiementPage: React.FC = () => {
           onClick={fetchData}
           className="btn btn-secondary btn-sm"
           style={{ padding: '0.35rem 0.6rem' }}
-          title="Actualiser"
+          title={t.common.refresh}
         >
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -417,14 +426,14 @@ export const DemandesPaiementPage: React.FC = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <Sparkles className="animate-spin" size={26} color={primaryColor} style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ fontSize: '0.85rem' }}>Chargement des liens de paiement...</div>
+          <div style={{ fontSize: '0.85rem' }}>{t.common.loading}</div>
         </div>
       ) : filteredDemandes.length === 0 ? (
         <div style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '3rem 1.5rem', textAlign: 'center' }}>
           <Link2 size={32} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>Aucune demande de paiement trouvée</div>
+          <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{t.demandes.noDemandesFound}</div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem', maxWidth: '420px', margin: '0.25rem auto 1rem auto' }}>
-            Sélectionnez une créance existante pour générer un lien public de règlement personnalisé.
+            {t.demandes.directLinkNotice}
           </div>
           <button
             type="button"
@@ -433,22 +442,22 @@ export const DemandesPaiementPage: React.FC = () => {
             style={{ backgroundColor: primaryColor, borderColor: primaryColor, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
           >
             <Plus size={14} />
-            <span>Créer un premier lien</span>
+            <span>{t.demandes.newLink}</span>
           </button>
         </div>
       ) : (
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: isRTL ? 'right' : 'left', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Client</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Motif & Créance</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Montant</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Statut</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Émission / Expiration</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Lien Public</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.client}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.creances.motif}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.amount}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.status}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.date}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.demandes.token}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRTL ? 'left' : 'right' }}>{t.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -471,18 +480,18 @@ export const DemandesPaiementPage: React.FC = () => {
                       <td style={{ padding: '0.65rem 0.85rem' }}>
                         <div style={{ color: 'white', fontWeight: 600 }}>{d.motif}</div>
                         {d.motif_creance && d.motif_creance !== d.motif && (
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Réf: {d.motif_creance}</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t.paiements.reference}: {d.motif_creance}</div>
                         )}
                       </td>
 
                       {/* Montant */}
                       <td style={{ padding: '0.65rem 0.85rem' }}>
                         <div style={{ fontWeight: 800, color: '#e2e8f0', fontSize: '0.9rem' }}>
-                          {d.montant.toLocaleString('fr-FR')} F
+                          {d.montant.toLocaleString()} {t.common.currency}
                         </div>
                         {d.montant_paye && d.montant_paye > 0 ? (
                           <div style={{ fontSize: '0.68rem', color: '#34d399' }}>
-                            Payé : {d.montant_paye.toLocaleString('fr-FR')} F
+                            {t.creances.paidAmount} : {d.montant_paye.toLocaleString()} {t.common.currency}
                           </div>
                         ) : null}
                       </td>
@@ -494,9 +503,9 @@ export const DemandesPaiementPage: React.FC = () => {
 
                       {/* Dates */}
                       <td style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                        <div>Créé : {d.date_creation}</div>
+                        <div>{d.date_creation}</div>
                         <div style={{ color: d.statut === 'expiree' ? '#f87171' : 'var(--text-muted)' }}>
-                          Exp : {d.date_expiration}
+                          {t.demandes.expiresOn} : {d.date_expiration}
                         </div>
                       </td>
 
@@ -515,6 +524,8 @@ export const DemandesPaiementPage: React.FC = () => {
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
+                              direction: 'ltr',
+                              textAlign: 'left',
                             }}
                             title={fullUrl}
                           >
@@ -536,7 +547,7 @@ export const DemandesPaiementPage: React.FC = () => {
                               gap: '0.2rem',
                               fontSize: '0.7rem',
                             }}
-                            title="Copier le lien"
+                            title={t.demandes.copyLink}
                           >
                             {copiedId === d.id ? <Check size={12} /> : <Copy size={12} />}
                           </button>
@@ -544,7 +555,7 @@ export const DemandesPaiementPage: React.FC = () => {
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRTL ? 'left' : 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                           <a
                             href={`/payer/${d.token}`}
@@ -552,7 +563,7 @@ export const DemandesPaiementPage: React.FC = () => {
                             rel="noopener noreferrer"
                             className="btn btn-secondary btn-sm"
                             style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem' }}
-                            title="Ouvrir la page de paiement"
+                            title={t.demandes.openPublicPage}
                           >
                             <ExternalLink size={12} />
                           </a>
@@ -562,7 +573,7 @@ export const DemandesPaiementPage: React.FC = () => {
                             onClick={() => openWhatsAppShare(d)}
                             className="btn btn-secondary btn-sm"
                             style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: '#22c55e' }}
-                            title="Partager par WhatsApp"
+                            title={t.demandes.shareWhatsApp}
                           >
                             <Send size={12} />
                           </button>
@@ -573,7 +584,7 @@ export const DemandesPaiementPage: React.FC = () => {
                               onClick={() => handleCancelDemande(d.id)}
                               className="btn btn-secondary btn-sm"
                               style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: '#f87171' }}
-                              title="Annuler cette demande"
+                              title={t.demandes.cancelLink}
                               disabled={actionLoading}
                             >
                               <Ban size={12} />
@@ -625,7 +636,7 @@ export const DemandesPaiementPage: React.FC = () => {
                   <Link2 size={16} />
                 </div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'white', margin: 0 }}>
-                  Générer une demande de paiement
+                  {t.demandes.newLink}
                 </h3>
               </div>
               <button
@@ -641,7 +652,7 @@ export const DemandesPaiementPage: React.FC = () => {
               {/* Select Creance */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                  Sélectionner la créance à régler *
+                  {t.demandes.targetReceivable} *
                 </label>
                 <select
                   value={selectedCreanceId}
@@ -658,10 +669,10 @@ export const DemandesPaiementPage: React.FC = () => {
                     outline: 'none',
                   }}
                 >
-                  <option value="" style={{ background: '#0f172a', color: 'white' }}>-- Choisir une créance active --</option>
+                  <option value="" style={{ background: '#0f172a', color: 'white' }}>-- {t.creances.selectClient} --</option>
                   {creances.map(c => (
                     <option key={c.id} value={c.id} style={{ background: '#0f172a', color: 'white' }}>
-                      {c.client_nom} • {c.motif} (Reste : {c.solde.toLocaleString('fr-FR')} FCFA)
+                      {c.client_nom} • {c.motif} ({t.creances.remainingBalance} : {c.solde.toLocaleString()} {t.common.currency})
                     </option>
                   ))}
                 </select>
@@ -670,7 +681,7 @@ export const DemandesPaiementPage: React.FC = () => {
               {/* Montant demandé */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                  Montant à payer (FCFA) *
+                  {t.demandes.requestedAmount} ({t.common.currency}) *
                 </label>
                 <input
                   type="number"
@@ -696,13 +707,13 @@ export const DemandesPaiementPage: React.FC = () => {
               {/* Motif de la demande */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                  Motif affiché au client *
+                  {t.creances.motif} *
                 </label>
                 <input
                   type="text"
                   value={customMotif}
                   onChange={e => setCustomMotif(e.target.value)}
-                  placeholder="Ex: Facture Pressing Nettoyage Costume"
+                  placeholder="Ex: Prestation..."
                   required
                   style={{
                     width: '100%',
@@ -720,14 +731,14 @@ export const DemandesPaiementPage: React.FC = () => {
               {/* Expiration preset */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                  Délai de validité du lien
+                  {t.demandes.validityDuration}
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
                   {[
-                    { id: '7', label: '7 jours' },
-                    { id: '14', label: '14 jours' },
-                    { id: '30', label: '30 jours' },
-                    { id: 'custom', label: 'Date libre' },
+                    { id: '7', label: t.demandes.sevenDays },
+                    { id: '14', label: t.demandes.fourteenDays },
+                    { id: '30', label: t.demandes.thirtyDays },
+                    { id: 'custom', label: t.demandes.customDate },
                   ].map(p => (
                     <button
                       key={p.id}
@@ -772,12 +783,12 @@ export const DemandesPaiementPage: React.FC = () => {
               {/* Description facultative */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                  Instructions ou notes complémentaires (facultatif)
+                  {t.creances.description}
                 </label>
                 <textarea
                   value={customDescription}
                   onChange={e => setCustomDescription(e.target.value)}
-                  placeholder="Notes affichées sur la page de paiement..."
+                  placeholder="..."
                   rows={2}
                   style={{
                     width: '100%',
@@ -801,7 +812,7 @@ export const DemandesPaiementPage: React.FC = () => {
                   className="btn btn-secondary btn-sm"
                   disabled={actionLoading}
                 >
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
@@ -810,7 +821,7 @@ export const DemandesPaiementPage: React.FC = () => {
                   style={{ backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                 >
                   {actionLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
-                  <span>Générer le lien</span>
+                  <span>{t.demandes.newLink}</span>
                 </button>
               </div>
             </form>
@@ -866,10 +877,10 @@ export const DemandesPaiementPage: React.FC = () => {
 
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'white', margin: 0 }}>
-                Lien de paiement prêt !
+                {t.demandes.createdModalTitle}
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.4 }}>
-                Un lien public sécurisé a été généré pour <strong>{createdDemandeResult.demande.client_nom}</strong> d'un montant de <strong>{createdDemandeResult.demande.montant.toLocaleString('fr-FR')} FCFA</strong>.
+                {t.demandes.createdModalSubtitle}
               </p>
             </div>
 
@@ -894,6 +905,7 @@ export const DemandesPaiementPage: React.FC = () => {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  direction: 'ltr',
                   textAlign: 'left',
                 }}
               >
@@ -916,7 +928,7 @@ export const DemandesPaiementPage: React.FC = () => {
                 }}
               >
                 {copiedId === 'modal_result' ? <Check size={13} /> : <Copy size={13} />}
-                <span>{copiedId === 'modal_result' ? 'Copié !' : 'Copier'}</span>
+                <span>{copiedId === 'modal_result' ? t.common.copied : t.common.copy}</span>
               </button>
             </div>
 
@@ -939,7 +951,7 @@ export const DemandesPaiementPage: React.FC = () => {
                 }}
               >
                 <Send size={14} />
-                <span>Envoyer le message WhatsApp au client</span>
+                <span>{t.demandes.shareWhatsApp}</span>
               </button>
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -951,7 +963,7 @@ export const DemandesPaiementPage: React.FC = () => {
                   style={{ flex: 1, padding: '0.55rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                 >
                   <ExternalLink size={13} />
-                  <span>Tester la page publique</span>
+                  <span>{t.demandes.openPublicPage}</span>
                 </a>
 
                 <button
@@ -960,7 +972,7 @@ export const DemandesPaiementPage: React.FC = () => {
                   className="btn btn-primary btn-sm"
                   style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)', color: 'white', padding: '0.55rem', fontSize: '0.78rem' }}
                 >
-                  Fermer
+                  {t.common.close}
                 </button>
               </div>
             </div>

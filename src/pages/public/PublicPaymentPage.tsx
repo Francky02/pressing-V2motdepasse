@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useLanguage } from '../../i18n/LanguageContext';
+import type { SupportedLocale } from '../../types';
 import {
   ShieldCheck,
   Building2,
@@ -18,11 +20,13 @@ import {
   Smartphone,
   Info,
   X,
+  Globe,
 } from 'lucide-react';
 import { apiRequest, type PublicPaymentPageData } from '../../services/api';
 
 export const PublicPaymentPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
+  const { t, locale, setLocale, isRTL } = useLanguage();
 
   const [data, setData] = useState<PublicPaymentPageData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +38,7 @@ export const PublicPaymentPage: React.FC = () => {
   useEffect(() => {
     const fetchDemande = async () => {
       if (!token) {
-        setError('Token de paiement manquant');
+        setError(t.publicPayment.linkExpired);
         setLoading(false);
         return;
       }
@@ -45,14 +49,14 @@ export const PublicPaymentPage: React.FC = () => {
         const res = await apiRequest<PublicPaymentPageData>(`/api/public/payer/${token}`);
         setData(res);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Lien de paiement introuvable ou invalide');
+        setError(err instanceof Error ? err.message : t.publicPayment.linkExpired);
       } finally {
         setLoading(false);
       }
     };
 
     fetchDemande();
-  }, [token]);
+  }, [token, t]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -75,8 +79,8 @@ export const PublicPaymentPage: React.FC = () => {
       >
         <div style={{ textAlign: 'center' }}>
           <Sparkles className="animate-spin" size={36} color="#10b981" style={{ margin: '0 auto 1rem auto' }} />
-          <div style={{ fontSize: '1rem', fontWeight: 600 }}>Chargement sécurisé de votre lien de paiement...</div>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.35rem' }}>Infrastructure Relancio</div>
+          <div style={{ fontSize: '1rem', fontWeight: 600 }}>{t.common.loading}</div>
+          <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.35rem' }}>{t.publicPayment.securedByRelancio}</div>
         </div>
       </div>
     );
@@ -123,10 +127,10 @@ export const PublicPaymentPage: React.FC = () => {
             <AlertCircle size={28} />
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem' }}>
-            Lien de paiement inaccessible
+            {t.publicPayment.linkExpired}
           </h2>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-            {error || 'Cette demande de paiement est invalide, a été supprimée ou a expiré.'}
+            {error || t.publicPayment.contactMerchant}
           </p>
           <Link
             to="/"
@@ -144,7 +148,7 @@ export const PublicPaymentPage: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            Retour à l'accueil Relancio
+            {t.common.back}
           </Link>
         </div>
       </div>
@@ -166,35 +170,35 @@ export const PublicPaymentPage: React.FC = () => {
         return (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
             <CheckCircle2 size={13} />
-            Règlement effectué
+            {t.common.statusLabels.payee}
           </span>
         );
       case 'expiree':
         return (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
             <Clock size={13} />
-            Demande expirée
+            {t.common.statusLabels.expire}
           </span>
         );
       case 'annulee':
         return (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.3)', padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
             <AlertCircle size={13} />
-            Demande annulée
+            {t.common.statusLabels.annule}
           </span>
         );
       case 'partiellement_payee':
         return (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8', border: '1px solid rgba(14, 165, 233, 0.3)', padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
             <Clock size={13} />
-            Partiellement réglée
+            {t.common.statusLabels.partiellement_payee}
           </span>
         );
       default:
         return (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700 }}>
             <Clock size={13} />
-            En attente de paiement
+            {t.common.statusLabels.en_attente}
           </span>
         );
     }
@@ -215,6 +219,32 @@ export const PublicPaymentPage: React.FC = () => {
         position: 'relative',
       }}
     >
+      {/* Language Switcher Bar at top */}
+      <div style={{ maxWidth: '520px', width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Globe size={13} color="var(--text-muted)" />
+          {(['fr', 'en', 'ar'] as SupportedLocale[]).map(l => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLocale(l)}
+              style={{
+                background: locale === l ? `${primaryColor}30` : 'transparent',
+                border: locale === l ? `1px solid ${primaryColor}60` : '1px solid transparent',
+                borderRadius: '4px',
+                color: locale === l ? 'white' : 'var(--text-muted)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                padding: '0.15rem 0.4rem',
+                cursor: 'pointer',
+              }}
+            >
+              {l.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Container */}
       <div style={{ maxWidth: '520px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         
@@ -264,10 +294,10 @@ export const PublicPaymentPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ textAlign: isRTL ? 'left' : 'right', flexShrink: 0 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.68rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.12)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>
               <ShieldCheck size={12} />
-              Vérifié
+              {t.publicPayment.securedByRelancio.split(' ')[0]}
             </div>
           </div>
         </div>
@@ -294,7 +324,7 @@ export const PublicPaymentPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
               <div>
                 <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.9, fontWeight: 700 }}>
-                  Demande de règlement sécurisée
+                  {t.publicPayment.secureCheckout}
                 </div>
                 <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: '0.2rem', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                   {demande.motif}
@@ -305,7 +335,7 @@ export const PublicPaymentPage: React.FC = () => {
             </div>
 
             <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', background: 'rgba(0,0,0,0.2)', padding: '0.35rem 0.75rem', borderRadius: '8px', width: 'fit-content' }}>
-              <span>Destiné à :</span>
+              <span>{t.publicPayment.billedTo} :</span>
               <strong style={{ color: 'white' }}>{client.nom}</strong>
               {client.telephone && <span style={{ opacity: 0.8 }}>({client.telephone})</span>}
             </div>
@@ -323,7 +353,7 @@ export const PublicPaymentPage: React.FC = () => {
               }}
             >
               <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-                Montant net à régler
+                {t.publicPayment.remainingToPay}
               </div>
               <div
                 style={{
@@ -334,7 +364,7 @@ export const PublicPaymentPage: React.FC = () => {
                   letterSpacing: '-0.02em',
                 }}
               >
-                {demande.montant.toLocaleString('fr-FR')} <span style={{ fontSize: '1.2rem', color: primaryColor }}>FCFA</span>
+                {demande.montant.toLocaleString()} <span style={{ fontSize: '1.2rem', color: primaryColor }}>{t.common.currency}</span>
               </div>
 
               {/* Financial Context breakdown */}
@@ -350,23 +380,23 @@ export const PublicPaymentPage: React.FC = () => {
                 }}
               >
                 <div>
-                  <div style={{ color: '#64748b' }}>Montant total créance</div>
+                  <div style={{ color: '#64748b' }}>{t.publicPayment.initialAmount}</div>
                   <div style={{ fontWeight: 700, color: '#e2e8f0', marginTop: '0.15rem' }}>
-                    {creance.montant_total.toLocaleString('fr-FR')} F
+                    {creance.montant_total.toLocaleString()} {t.common.currency}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ color: '#64748b' }}>Déjà payé</div>
+                  <div style={{ color: '#64748b' }}>{t.publicPayment.amountAlreadyPaid}</div>
                   <div style={{ fontWeight: 700, color: '#34d399', marginTop: '0.15rem' }}>
-                    {(creance.montant_paye || 0).toLocaleString('fr-FR')} F
+                    {(creance.montant_paye || 0).toLocaleString()} {t.common.currency}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ color: '#64748b' }}>Solde restant</div>
+                  <div style={{ color: '#64748b' }}>{t.common.balance}</div>
                   <div style={{ fontWeight: 700, color: '#38bdf8', marginTop: '0.15rem' }}>
-                    {creance.solde.toLocaleString('fr-FR')} F
+                    {creance.solde.toLocaleString()} {t.common.currency}
                   </div>
                 </div>
               </div>
@@ -387,17 +417,17 @@ export const PublicPaymentPage: React.FC = () => {
               }}
             >
               <div>
-                Émise le : <strong style={{ color: '#cbd5e1' }}>{demande.date_creation}</strong>
+                {t.common.date} : <strong style={{ color: '#cbd5e1' }}>{demande.date_creation}</strong>
               </div>
               <div>
-                Date limite : <strong style={{ color: isExpired ? '#f87171' : '#cbd5e1' }}>{demande.date_expiration}</strong>
+                {t.publicPayment.dueDate} : <strong style={{ color: isExpired ? '#f87171' : '#cbd5e1' }}>{demande.date_expiration}</strong>
               </div>
             </div>
 
             {/* Description if present */}
             {demande.description && (
-              <div style={{ fontSize: '0.78rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px', borderLeft: `3px solid ${primaryColor}` }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem', marginBottom: '0.2rem' }}>Détails de la prestation :</span>
+              <div style={{ fontSize: '0.78rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px', borderInlineStart: `3px solid ${primaryColor}` }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem', marginBottom: '0.2rem' }}>{t.creances.description} :</span>
                 {demande.description}
               </div>
             )}
@@ -434,8 +464,8 @@ export const PublicPaymentPage: React.FC = () => {
                 }}
               >
                 <Lock size={16} />
-                <span>Payer {demande.montant.toLocaleString('fr-FR')} FCFA</span>
-                <ArrowRight size={16} />
+                <span>{t.publicPayment.payNow} ({demande.montant.toLocaleString()} {t.common.currency})</span>
+                <ArrowRight size={16} style={{ transform: isRTL ? 'rotate(180deg)' : 'none' }} />
               </button>
             )}
 
@@ -457,7 +487,7 @@ export const PublicPaymentPage: React.FC = () => {
                 }}
               >
                 <CheckCircle2 size={18} />
-                <span>Cette demande a déjà été entièrement réglée. Merci !</span>
+                <span>{t.publicPayment.paymentSuccess}</span>
               </div>
             )}
 
@@ -474,7 +504,7 @@ export const PublicPaymentPage: React.FC = () => {
                   fontWeight: 600,
                 }}
               >
-                Ce lien de paiement a expiré le {demande.date_expiration}. Veuillez contacter {company.nom} pour obtenir un nouveau lien valide.
+                {t.publicPayment.linkExpired} {t.publicPayment.contactMerchant}
               </div>
             )}
 
@@ -491,7 +521,7 @@ export const PublicPaymentPage: React.FC = () => {
                   fontWeight: 600,
                 }}
               >
-                Cette demande de paiement a été annulée par l'émetteur.
+                {t.publicPayment.linkCancelled}
               </div>
             )}
 
@@ -515,7 +545,7 @@ export const PublicPaymentPage: React.FC = () => {
                 }}
               >
                 {copiedLink ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
-                <span>{copiedLink ? 'Lien copié !' : 'Copier ce lien'}</span>
+                <span>{copiedLink ? t.common.copied : t.demandes.copyLink}</span>
               </button>
 
               {company.telephone && (
@@ -536,7 +566,7 @@ export const PublicPaymentPage: React.FC = () => {
                   }}
                 >
                   <Phone size={13} color={primaryColor} />
-                  <span>Contacter l'émetteur</span>
+                  <span>{t.publicPayment.contactMerchant.split(' ')[0]}</span>
                 </a>
               )}
             </div>
@@ -558,7 +588,7 @@ export const PublicPaymentPage: React.FC = () => {
           }}
         >
           <div style={{ fontWeight: 700, color: 'white', marginBottom: '0.15rem' }}>
-            Informations sur l'établissement :
+            {t.settings.companyInfo} :
           </div>
           {company.telephone && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -584,9 +614,9 @@ export const PublicPaymentPage: React.FC = () => {
         <div style={{ textAlign: 'center', padding: '0.5rem', color: '#64748b', fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
             <ShieldCheck size={14} color="#10b981" />
-            <span>Infrastructure sécurisée et propulsée par <strong>Relancio</strong></span>
+            <span>{t.publicPayment.securedByRelancio}</span>
           </div>
-          <div>Solution SaaS de gestion et recouvrement de créances pour professionnels</div>
+          <div>{t.publicPayment.sslEncryption}</div>
         </div>
 
       </div>
@@ -624,10 +654,12 @@ export const PublicPaymentPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsDemoModalOpen(false)}
+              className="modal-close-btn"
               style={{
                 position: 'absolute',
                 top: '1rem',
-                right: '1rem',
+                right: isRTL ? 'auto' : '1rem',
+                left: isRTL ? '1rem' : 'auto',
                 background: 'rgba(255,255,255,0.08)',
                 border: 'none',
                 color: '#94a3b8',
@@ -660,10 +692,10 @@ export const PublicPaymentPage: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'white', margin: 0 }}>
-                  Paiement en ligne sécurisé
+                  {t.publicPayment.title}
                 </h3>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                  Intégration passerelles multi-opérateurs
+                  {t.publicPayment.secureCheckout}
                 </div>
               </div>
             </div>
@@ -685,21 +717,17 @@ export const PublicPaymentPage: React.FC = () => {
             >
               <Info size={18} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <strong>Passerelle en cours de déploiement</strong> : Le module de règlement direct par <strong>Wave, Orange Money, Moov, MTN & Carte Visa/Mastercard</strong> est prêt sur le plan architectural et sera activé lors de la phase passerelles partenaires.
+                <strong>{t.publicPayment.paymentMethods}</strong> : Wave, Orange Money, MTN, Moov, Carte Visa/Mastercard.
               </div>
             </div>
 
             {/* Methods Preview */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
-                Canaux configurés pour {company.nom} :
-              </div>
-
               {[
-                { name: 'Wave Mobile Money', icon: <Smartphone size={16} color="#00d4ff" />, status: 'Bientôt disponible' },
-                { name: 'Orange Money Côte d’Ivoire / Sénégal', icon: <Smartphone size={16} color="#ff7900" />, status: 'Bientôt disponible' },
-                { name: 'MTN Mobile Money / Moov Money', icon: <Smartphone size={16} color="#ffcc00" />, status: 'Bientôt disponible' },
-                { name: 'Carte Bancaire (Visa / Mastercard)', icon: <CreditCard size={16} color="#a855f7" />, status: 'Bientôt disponible' },
+                { name: 'Wave Mobile Money', icon: <Smartphone size={16} color="#00d4ff" /> },
+                { name: 'Orange Money', icon: <Smartphone size={16} color="#ff7900" /> },
+                { name: 'MTN Mobile Money / Moov', icon: <Smartphone size={16} color="#ffcc00" /> },
+                { name: 'Carte Bancaire (Visa / Mastercard)', icon: <CreditCard size={16} color="#a855f7" /> },
               ].map((m, idx) => (
                 <div
                   key={idx}
@@ -717,8 +745,8 @@ export const PublicPaymentPage: React.FC = () => {
                     {m.icon}
                     <span>{m.name}</span>
                   </div>
-                  <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#94a3b8', fontWeight: 600 }}>
-                    {m.status}
+                  <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', borderRadius: '6px', background: `${primaryColor}20`, color: primaryColor, fontWeight: 700 }}>
+                    {t.common.active}
                   </span>
                 </div>
               ))}
@@ -737,7 +765,7 @@ export const PublicPaymentPage: React.FC = () => {
               }}
             >
               <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                Pour régler cette somme dès à présent ({demande.montant.toLocaleString('fr-FR')} FCFA) :
+                {t.publicPayment.remainingToPay} : <strong>{demande.montant.toLocaleString()} {t.common.currency}</strong>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {company.telephone && (
@@ -756,7 +784,7 @@ export const PublicPaymentPage: React.FC = () => {
                     }}
                   >
                     <Phone size={13} />
-                    Appeler {company.telephone}
+                    {company.telephone}
                   </a>
                 )}
                 <button
@@ -765,7 +793,7 @@ export const PublicPaymentPage: React.FC = () => {
                   className="btn btn-secondary btn-sm"
                   style={{ fontSize: '0.78rem' }}
                 >
-                  Fermer
+                  {t.common.close}
                 </button>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { ShieldCheck, ArrowRight, Construction } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -15,6 +16,7 @@ export const PlaceholderModule: React.FC<PlaceholderProps> = ({
   moduleDescription,
 }) => {
   const { company } = useAuth();
+  const { t, isRTL } = useLanguage();
   const primaryColor = company?.couleur_principale || '#10b981';
 
   return (
@@ -39,11 +41,11 @@ export const PlaceholderModule: React.FC<PlaceholderProps> = ({
 
         <div className="badge-pill" style={{ marginBottom: '0.75rem', padding: '0.2rem 0.65rem', fontSize: '0.75rem' }}>
           <Construction size={13} />
-          <span>Module en préparation</span>
+          <span>{t.placeholder.underConstruction}</span>
         </div>
 
         <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem' }}>
-          Module {moduleName}
+          {moduleName}
         </h2>
 
         <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: '520px', margin: '0 auto 1.25rem auto', lineHeight: 1.5 }}>
@@ -65,10 +67,10 @@ export const PlaceholderModule: React.FC<PlaceholderProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: primaryColor, fontWeight: 700, marginBottom: '0.35rem' }}>
             <ShieldCheck size={16} />
-            <span>Architecture prête & isolation activée</span>
+            <span>{t.placeholder.readyArchitecture}</span>
           </div>
-          <div>Entreprise : <strong>{company?.nom}</strong></div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Identifiant tenant : <code>{company?.id}</code></div>
+          <div>{t.placeholder.tenantCompany} <strong>{company?.nom}</strong></div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.placeholder.tenantId} <code>{company?.id}</code></div>
         </div>
 
         <Link
@@ -76,8 +78,8 @@ export const PlaceholderModule: React.FC<PlaceholderProps> = ({
           className="btn btn-primary"
           style={{ backgroundColor: primaryColor }}
         >
-          <span>Retourner au Tableau de bord</span>
-          <ArrowRight size={16} />
+          <span>{t.placeholder.backToDashboard}</span>
+          <ArrowRight size={16} style={{ transform: isRTL ? 'rotate(180deg)' : 'none' }} />
         </Link>
       </div>
     </div>

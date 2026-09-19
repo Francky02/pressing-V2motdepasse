@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { apiRequest } from '../../services/api';
 import {
   CreditCard,
@@ -31,6 +32,7 @@ interface EnrichedPaiement {
 
 export const PaiementsPage: React.FC = () => {
   const { company } = useAuth();
+  const { t, isRTL } = useLanguage();
   const primaryColor = company?.couleur_principale || '#10b981';
 
   const [paiements, setPaiements] = useState<EnrichedPaiement[]>([]);
@@ -45,7 +47,7 @@ export const PaiementsPage: React.FC = () => {
       const res = await apiRequest<{ paiements: EnrichedPaiement[]; total: number }>('/api/company/paiements');
       setPaiements(res.paiements);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur chargement paiements');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setLoading(false);
     }
@@ -77,7 +79,7 @@ export const PaiementsPage: React.FC = () => {
         <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
           <AlertTriangle size={15} />
           <span>{errorMsg}</span>
-          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
+          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginInlineStart: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
@@ -102,14 +104,14 @@ export const PaiementsPage: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-                Journal des Paiements
+                {t.paiements.title}
               </h1>
               <span style={{ fontSize: '0.72rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
                 {filteredPaiements.length}
               </span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Total des fonds encaissés : <strong style={{ color: '#34d399' }}>{totalCollected.toLocaleString('fr-FR')} FCFA</strong>
+              {t.paiements.totalCollected} : <strong style={{ color: '#34d399' }}>{totalCollected.toLocaleString()} {t.common.currency}</strong>
             </div>
           </div>
         </div>
@@ -133,7 +135,7 @@ export const PaiementsPage: React.FC = () => {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Rechercher paiement..."
+              placeholder={t.common.search}
               style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.82rem', width: '100%', outline: 'none' }}
             />
             {search && (
@@ -149,7 +151,7 @@ export const PaiementsPage: React.FC = () => {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
           >
             <Link2 size={13} color={primaryColor} />
-            <span>Liens de paiement</span>
+            <span>{t.layout.paymentLinks}</span>
           </Link>
 
           <button
@@ -157,7 +159,7 @@ export const PaiementsPage: React.FC = () => {
             onClick={fetchPaiements}
             className="btn btn-secondary btn-sm"
             style={{ padding: '0.35rem 0.6rem' }}
-            title="Actualiser"
+            title={t.common.refresh}
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -168,26 +170,26 @@ export const PaiementsPage: React.FC = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
           <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ fontSize: '0.85rem' }}>Chargement du journal des paiements...</div>
+          <div style={{ fontSize: '0.85rem' }}>{t.common.loading}</div>
         </div>
       ) : filteredPaiements.length === 0 ? (
         <div style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '2.5rem 1.5rem', textAlign: 'center' }}>
           <Receipt size={28} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>Aucun encaissement trouvé</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Les règlements enregistrés sur vos créances apparaîtront ici.</div>
+          <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{t.paiements.noPaymentsFound}</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>{t.paiements.subtitle}</div>
         </div>
       ) : (
         <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: isRTL ? 'right' : 'left', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Client</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Motif Créance</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Référence & Notes</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Date</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>Moyen</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Montant Encaissé</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.client}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.paiements.motif}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.paiements.reference} & {t.common.notes}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.date}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>{t.paiements.method}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRTL ? 'left' : 'right' }}>{t.paiements.amount}</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,7 +211,7 @@ export const PaiementsPage: React.FC = () => {
 
                     <td style={{ padding: '0.65rem 0.85rem' }}>
                       <span style={{ fontWeight: 700, color: 'white' }}>{p.reference}</span>
-                      {p.notes && <span style={{ color: 'var(--text-muted)', marginLeft: '0.35rem', fontSize: '0.72rem' }}>• {p.notes}</span>}
+                      {p.notes && <span style={{ color: 'var(--text-muted)', marginInlineStart: '0.35rem', fontSize: '0.72rem' }}>• {p.notes}</span>}
                     </td>
 
                     <td style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)' }}>
@@ -222,9 +224,9 @@ export const PaiementsPage: React.FC = () => {
                       </span>
                     </td>
 
-                    <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                    <td style={{ padding: '0.65rem 0.85rem', textAlign: isRTL ? 'left' : 'right' }}>
                       <span style={{ fontWeight: 800, color: '#34d399', fontSize: '0.92rem' }}>
-                        +{p.montant.toLocaleString('fr-FR')} F
+                        +{p.montant.toLocaleString()} {t.common.currency}
                       </span>
                     </td>
                   </tr>

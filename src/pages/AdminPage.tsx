@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { apiRequest } from '../services/api';
+import type { SupportedLocale } from '../types';
 import {
   ShieldAlert,
   Building2,
@@ -48,6 +50,7 @@ interface AdminStats {
 
 export const AdminPage: React.FC = () => {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
+  const { t, locale, setLocale, isRtl } = useLanguage();
 
   // Admin dashboard state
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -116,7 +119,7 @@ export const AdminPage: React.FC = () => {
         });
       }
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erreur lors du changement de statut');
+      alert(err instanceof Error ? err.message : t.common.error);
     }
   };
 
@@ -125,18 +128,17 @@ export const AdminPage: React.FC = () => {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#090d16', color: 'white' }}>
         <div style={{ textAlign: 'center' }}>
           <ShieldAlert className="animate-badge" size={36} color="#f59e0b" style={{ margin: '0 auto 1rem auto' }} />
-          <div style={{ fontSize: '1rem', fontWeight: 600 }}>Vérification de la session Super Admin...</div>
+          <div style={{ fontSize: '1rem', fontWeight: 600 }}>{t.admin.sessionChecking}</div>
         </div>
       </div>
     );
   }
 
-  // Protection stricte : si non authentifié ou non Super Admin, redirection immédiate vers /connexion
+  // Strict protection: redirect if not Super Admin
   if (!isSuperAdmin) {
     return <Navigate to="/connexion" replace />;
   }
 
-  // Super Admin Logged In Dashboard
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#090d16', color: 'var(--text-primary)' }}>
       {/* Admin Top Navigation */}
@@ -150,7 +152,7 @@ export const AdminPage: React.FC = () => {
           zIndex: 100,
         }}
       >
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Link to="/" className="brand-logo-link">
               <div className="brand-logo-icon" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', width: '30px', height: '30px' }}>
@@ -170,12 +172,44 @@ export const AdminPage: React.FC = () => {
                 letterSpacing: '0.5px',
               }}
             >
-              SUPER ADMIN CONSOLE
+              {t.admin.superAdminBadge}
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ textAlign: 'right' }}>
+            {/* Language Switcher */}
+            <div
+              style={{
+                display: 'inline-flex',
+                background: 'rgba(255, 255, 255, 0.05)',
+                padding: '2px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              {(['fr', 'en', 'ar'] as SupportedLocale[]).map(lang => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => setLocale(lang)}
+                  style={{
+                    padding: '0.2rem 0.5rem',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: locale === lang ? 'var(--primary)' : 'transparent',
+                    color: locale === lang ? '#0b0f19' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ textAlign: isRtl ? 'left' : 'right' }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'white' }}>{user?.nom}</div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{user?.email}</div>
             </div>
@@ -186,7 +220,7 @@ export const AdminPage: React.FC = () => {
               style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#fb7185', padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
             >
               <LogOut size={14} />
-              <span>Déconnexion</span>
+              <span>{t.admin.logout}</span>
             </button>
           </div>
         </div>
@@ -219,10 +253,10 @@ export const AdminPage: React.FC = () => {
         <div style={{ marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0 }}>
-              Supervision Globale de la Plateforme
+              {t.admin.title}
             </h2>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Mise à jour en temps réel
+              {t.admin.realTimeUpdate}
             </span>
           </div>
 
@@ -234,10 +268,10 @@ export const AdminPage: React.FC = () => {
             }}
           >
             {/* Total Entreprises */}
-            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: '3px solid #6366f1' }}>
+            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: isRtl ? 'none' : '3px solid #6366f1', borderRight: isRtl ? '3px solid #6366f1' : 'none' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                 <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 700 }}>
-                  Entreprises totales
+                  {t.admin.totalCompanies}
                 </span>
                 <Building2 size={16} color="#6366f1" />
               </div>
@@ -245,15 +279,15 @@ export const AdminPage: React.FC = () => {
                 {stats ? stats.totalCompanies : '...'}
               </div>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                Comptes professionnels
+                {t.admin.proAccounts}
               </span>
             </div>
 
             {/* Entreprises Actives */}
-            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: '3px solid #10b981' }}>
+            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: isRtl ? 'none' : '3px solid #10b981', borderRight: isRtl ? '3px solid #10b981' : 'none' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                 <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: 700 }}>
-                  Entreprises actives
+                  {t.admin.activeCompanies}
                 </span>
                 <CheckCircle size={16} color="#10b981" />
               </div>
@@ -261,15 +295,15 @@ export const AdminPage: React.FC = () => {
                 {stats ? stats.activeCompanies : '...'}
               </div>
               <span style={{ fontSize: '0.72rem', color: '#34d399' }}>
-                Autorisées à encaisser
+                {t.admin.authorizedToCollect}
               </span>
             </div>
 
             {/* Entreprises Désactivées */}
-            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: '3px solid #f43f5e' }}>
+            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: isRtl ? 'none' : '3px solid #f43f5e', borderRight: isRtl ? '3px solid #f43f5e' : 'none' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                 <span style={{ fontSize: '0.75rem', color: '#fb7185', fontWeight: 700 }}>
-                  Entreprises désactivées
+                  {t.admin.inactiveCompanies}
                 </span>
                 <XCircle size={16} color="#f43f5e" />
               </div>
@@ -277,15 +311,15 @@ export const AdminPage: React.FC = () => {
                 {stats ? stats.inactiveCompanies : '...'}
               </div>
               <span style={{ fontSize: '0.72rem', color: '#fb7185' }}>
-                Accès suspendu
+                {t.admin.accessSuspended}
               </span>
             </div>
 
             {/* Nombre d'utilisateurs */}
-            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: '3px solid #f59e0b' }}>
+            <div className="glass-card" style={{ padding: '0.85rem 1rem', borderLeft: isRtl ? 'none' : '3px solid #f59e0b', borderRight: isRtl ? '3px solid #f59e0b' : 'none' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                 <span style={{ fontSize: '0.75rem', color: '#fde68a', fontWeight: 700 }}>
-                  Utilisateurs inscrits
+                  {t.admin.totalUsers}
                 </span>
                 <Users size={16} color="#f59e0b" />
               </div>
@@ -293,7 +327,7 @@ export const AdminPage: React.FC = () => {
                 {stats ? stats.totalUsers : '...'}
               </div>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                Admins & Super Admin
+                {t.admin.adminsCount}
               </span>
             </div>
           </div>
@@ -312,10 +346,10 @@ export const AdminPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'white', margin: 0 }}>
-                Gestion des Entreprises Clientes
+                {t.admin.companiesList}
               </h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.15rem 0 0 0' }}>
-                Contrôle d'accès et supervision des tenants de la plateforme
+                {t.admin.companiesSubtitle}
               </p>
             </div>
             <button
@@ -325,20 +359,20 @@ export const AdminPage: React.FC = () => {
               disabled={isLoadingData}
               style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
             >
-              {isLoadingData ? 'Actualisation...' : 'Rafraîchir'}
+              {isLoadingData ? t.common.loading : t.common.refresh}
             </button>
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '820px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: isRtl ? 'right' : 'left', minWidth: '820px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <th style={{ padding: '0.55rem 0.65rem' }}>Entreprise</th>
-                  <th style={{ padding: '0.55rem 0.65rem' }}>Responsable</th>
-                  <th style={{ padding: '0.55rem 0.65rem' }}>Email & Tél</th>
-                  <th style={{ padding: '0.55rem 0.65rem' }}>Secteur</th>
-                  <th style={{ padding: '0.55rem 0.65rem' }}>Statut</th>
-                  <th style={{ padding: '0.55rem 0.65rem', textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '0.55rem 0.65rem' }}>{t.admin.companyName}</th>
+                  <th style={{ padding: '0.55rem 0.65rem' }}>{t.admin.manager}</th>
+                  <th style={{ padding: '0.55rem 0.65rem' }}>{t.common.email} & {t.common.phone}</th>
+                  <th style={{ padding: '0.55rem 0.65rem' }}>{t.auth.sector}</th>
+                  <th style={{ padding: '0.55rem 0.65rem' }}>{t.admin.status}</th>
+                  <th style={{ padding: '0.55rem 0.65rem', textAlign: isRtl ? 'left' : 'right' }}>{t.admin.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -373,7 +407,7 @@ export const AdminPage: React.FC = () => {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, color: 'white', lineHeight: 1.2 }}>{comp.nom}</div>
-                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>ID: {comp.id}</div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', direction: 'ltr', textAlign: isRtl ? 'right' : 'left' }}>ID: {comp.id}</div>
                         </div>
                       </div>
                     </td>
@@ -383,8 +417,8 @@ export const AdminPage: React.FC = () => {
                     </td>
 
                     <td style={{ padding: '0.55rem 0.65rem' }}>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{comp.email}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{comp.telephone}</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', direction: 'ltr', textAlign: isRtl ? 'right' : 'left' }}>{comp.email}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', direction: 'ltr', textAlign: isRtl ? 'right' : 'left' }}>{comp.telephone}</div>
                     </td>
 
                     <td style={{ padding: '0.55rem 0.65rem' }}>
@@ -418,7 +452,7 @@ export const AdminPage: React.FC = () => {
                             border: '1px solid rgba(16, 185, 129, 0.3)',
                           }}
                         >
-                          <Check size={11} /> Actif
+                          <Check size={11} /> {t.common.active}
                         </span>
                       ) : (
                         <span
@@ -435,12 +469,12 @@ export const AdminPage: React.FC = () => {
                             border: '1px solid rgba(244, 63, 94, 0.3)',
                           }}
                         >
-                          <X size={11} /> Désactivé
+                          <X size={11} /> {t.common.inactive}
                         </span>
                       )}
                     </td>
 
-                    <td style={{ padding: '0.55rem 0.65rem', textAlign: 'right' }}>
+                    <td style={{ padding: '0.55rem 0.65rem', textAlign: isRtl ? 'left' : 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.4rem' }}>
                         <button
                           type="button"
@@ -449,7 +483,7 @@ export const AdminPage: React.FC = () => {
                           style={{ fontSize: '0.75rem', padding: '0.25rem 0.55rem' }}
                         >
                           <Eye size={12} />
-                          <span>Consulter</span>
+                          <span>{t.admin.viewDetails}</span>
                         </button>
 
                         <button
@@ -469,7 +503,7 @@ export const AdminPage: React.FC = () => {
                             gap: '0.25rem',
                           }}
                         >
-                          {comp.actif ? 'Désactiver' : 'Activer'}
+                          {comp.actif ? t.admin.deactivate : t.admin.activate}
                         </button>
                       </div>
                     </td>
@@ -492,7 +526,7 @@ export const AdminPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
             <Activity size={18} color="#f59e0b" />
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'white', margin: 0 }}>
-              Journal d'Activité Récent
+              {t.admin.recentActivities}
             </h3>
           </div>
 
@@ -513,7 +547,7 @@ export const AdminPage: React.FC = () => {
                 }}
               >
                 <div>
-                  <span style={{ fontWeight: 700, color: 'white', fontSize: '0.82rem', marginRight: '0.45rem' }}>
+                  <span style={{ fontWeight: 700, color: 'white', fontSize: '0.82rem', margin: isRtl ? '0 0 0 0.45rem' : '0 0.45rem 0 0' }}>
                     {act.action}
                   </span>
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
@@ -522,7 +556,9 @@ export const AdminPage: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-muted)', fontSize: '0.72rem' }}>
                   <Clock size={11} />
-                  <span>{new Date(act.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span style={{ direction: 'ltr' }}>
+                    {new Date(act.created_at).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
               </div>
             ))}
@@ -537,7 +573,15 @@ export const AdminPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedCompany(null)}
-              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                ...(isRtl ? { left: '1rem' } : { right: '1rem' }),
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
             >
               <X size={18} />
             </button>
@@ -566,21 +610,21 @@ export const AdminPage: React.FC = () => {
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0 }}>
                   {selectedCompany.nom}
                 </h3>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', direction: 'ltr', display: 'inline-block' }}>
                   Tenant ID: {selectedCompany.id}
                 </span>
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.65rem', fontSize: '0.82rem', background: 'rgba(255, 255, 255, 0.02)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-              <div><span style={{ color: 'var(--text-muted)' }}>Responsable:</span> <strong style={{ color: 'white' }}>{selectedCompany.responsable}</strong></div>
-              <div><span style={{ color: 'var(--text-muted)' }}>Email:</span> <strong style={{ color: 'white' }}>{selectedCompany.email}</strong></div>
-              <div><span style={{ color: 'var(--text-muted)' }}>Téléphone:</span> <strong style={{ color: 'white' }}>{selectedCompany.telephone}</strong></div>
-              <div><span style={{ color: 'var(--text-muted)' }}>Secteur:</span> <strong style={{ color: 'white' }}>{selectedCompany.secteur}</strong></div>
-              <div><span style={{ color: 'var(--text-muted)' }}>Adresse:</span> <strong style={{ color: 'white' }}>{selectedCompany.adresse || 'N/A'}</strong></div>
-              <div><span style={{ color: 'var(--text-muted)' }}>Couleur:</span> <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '3px', backgroundColor: selectedCompany.couleur_principale, verticalAlign: 'middle', margin: '0 4px' }} />{selectedCompany.couleur_principale}</div>
-              <div><span style={{ color: 'var(--text-muted)' }}>Statut:</span> <strong style={{ color: selectedCompany.actif ? '#34d399' : '#fb7185' }}>{selectedCompany.actif ? 'Actif' : 'Désactivé'}</strong></div>
-              <div><span style={{ color: 'var(--text-muted)' }}>Inscrit le:</span> <strong style={{ color: 'white' }}>{new Date(selectedCompany.created_at).toLocaleDateString('fr-FR')}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.admin.manager}:</span> <strong style={{ color: 'white' }}>{selectedCompany.responsable}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.common.email}:</span> <strong style={{ color: 'white', direction: 'ltr', display: 'inline-block' }}>{selectedCompany.email}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.common.phone}:</span> <strong style={{ color: 'white', direction: 'ltr', display: 'inline-block' }}>{selectedCompany.telephone}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.auth.sector}:</span> <strong style={{ color: 'white' }}>{selectedCompany.secteur}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.settings.address}:</span> <strong style={{ color: 'white' }}>{selectedCompany.adresse || 'N/A'}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.admin.color}:</span> <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '3px', backgroundColor: selectedCompany.couleur_principale, verticalAlign: 'middle', margin: '0 4px' }} />{selectedCompany.couleur_principale}</div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.admin.status}:</span> <strong style={{ color: selectedCompany.actif ? '#34d399' : '#fb7185' }}>{selectedCompany.actif ? t.common.active : t.common.inactive}</strong></div>
+              <div><span style={{ color: 'var(--text-muted)' }}>{t.admin.registeredOn}</span> <strong style={{ color: 'white' }}>{new Date(selectedCompany.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : locale === 'en' ? 'en-US' : 'fr-FR')}</strong></div>
             </div>
 
             <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -590,7 +634,7 @@ export const AdminPage: React.FC = () => {
                 style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
                 onClick={() => setSelectedCompany(null)}
               >
-                Fermer
+                {t.admin.close}
               </button>
               <button
                 type="button"
@@ -601,7 +645,7 @@ export const AdminPage: React.FC = () => {
                 className={`btn btn-sm ${selectedCompany.actif ? 'btn-secondary' : 'btn-primary'}`}
                 style={{ color: selectedCompany.actif ? '#fb7185' : '#0b0f19', fontSize: '0.78rem', padding: '0.35rem 0.85rem' }}
               >
-                {selectedCompany.actif ? 'Désactiver cette entreprise' : 'Réactiver cette entreprise'}
+                {selectedCompany.actif ? t.admin.deactivateThisCompany : t.admin.reactivateThisCompany}
               </button>
             </div>
           </div>

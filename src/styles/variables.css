@@ -61,5 +61,35 @@
 }
 
 .rtl-layout {
-  font-family: var(--font-ar), var(--font-body);
+  font-family: var(--font-ar), 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-layout th,
+.rtl-layout td {
+  text-align: right;
+}
+
+.rtl-layout .sidebar-desktop {
+  border-right: none !important;
+  border-left: 1px solid var(--border-subtle) !important;
+}
+
+.rtl-layout .modal-close-btn {
+  right: auto !important;
+  left: 1.25rem !important;
+}
+
+.rtl-layout input,
+.rtl-layout select,
+.rtl-layout textarea {
+  text-align: right;
+  direction: rtl;
+}
+
+.rtl-layout input[type="number"],
+.rtl-layout input[type="tel"] {
+  text-align: left;
+  direction: ltr;
 }

@@ -7,6 +7,8 @@ import { CompanyCustomizerProvider } from './context/CompanyCustomizerContext';
 import { LandingPage } from './pages/LandingPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoginPage } from './pages/LoginPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { AdminPage } from './pages/AdminPage';
 import { PublicPaymentPage } from './pages/public/PublicPaymentPage';
 
@@ -38,6 +40,10 @@ export default function App() {
 
               {/* 4. Connexion Entreprise */}
               <Route path="/connexion" element={<LoginPage />} />
+
+              {/* 4.1 Récupération de mot de passe */}
+              <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+              <Route path="/reinitialiser-mot-de-passe/:token" element={<ResetPasswordPage />} />
 
               {/* 5. Super Admin (Connexion & Dashboard) */}
               <Route path="/admin" element={<AdminPage />} />

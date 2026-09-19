@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { apiRequest } from '../../services/api';
 import {
   Users,
@@ -75,6 +76,7 @@ interface ClientDetailResponse {
 
 export const ClientsPage: React.FC = () => {
   const { company } = useAuth();
+  const { t, locale, isRtl } = useLanguage();
   const primaryColor = company?.couleur_principale || '#10b981';
 
   const [clients, setClients] = useState<ClientItem[]>([]);
@@ -112,6 +114,10 @@ export const ClientsPage: React.FC = () => {
     notes: '',
   });
 
+  const formatAmount = (val: number) => {
+    return val.toLocaleString(locale === 'ar' ? 'ar-EG' : locale === 'en' ? 'en-US' : 'fr-FR');
+  };
+
   const fetchClients = async () => {
     try {
       setLoading(true);
@@ -121,7 +127,7 @@ export const ClientsPage: React.FC = () => {
       );
       setClients(res.clients);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors du chargement des clients');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setLoading(false);
     }
@@ -138,7 +144,7 @@ export const ClientsPage: React.FC = () => {
       const res = await apiRequest<ClientDetailResponse>(`/api/company/clients/${client.id}`);
       setSelectedClientDetail(res);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Impossible de charger la fiche client');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setDetailLoading(false);
     }
@@ -174,7 +180,13 @@ export const ClientsPage: React.FC = () => {
   const handleSaveClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nom.trim() || !formData.telephone.trim()) {
-      setErrorMsg('Veuillez renseigner le nom et le numéro de téléphone');
+      setErrorMsg(
+        locale === 'ar'
+          ? 'يرجى إدخال الاسم ورقم الهاتف'
+          : locale === 'en'
+          ? 'Please enter customer name and phone number'
+          : 'Veuillez renseigner le nom et le numéro de téléphone'
+      );
       return;
     }
 
@@ -187,13 +199,13 @@ export const ClientsPage: React.FC = () => {
           method: 'PUT',
           body: JSON.stringify(formData),
         });
-        setSuccessMsg(`Client "${formData.nom}" mis à jour`);
+        setSuccessMsg(t.clients.updateSuccess);
       } else {
         await apiRequest(`/api/company/clients`, {
           method: 'POST',
           body: JSON.stringify(formData),
         });
-        setSuccessMsg(`Client "${formData.nom}" créé`);
+        setSuccessMsg(t.clients.createSuccess);
       }
 
       setIsCreateModalOpen(false);
@@ -203,7 +215,7 @@ export const ClientsPage: React.FC = () => {
         openClientDetail({ ...editingClient, ...formData });
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
       setTimeout(() => setSuccessMsg(null), 3500);
@@ -219,7 +231,7 @@ export const ClientsPage: React.FC = () => {
         method: 'PATCH',
         body: JSON.stringify({ actif: newStatus }),
       });
-      setSuccessMsg(`Client ${newStatus ? 'réactivé' : 'archivé'}`);
+      setSuccessMsg(newStatus ? t.clients.reactivateSuccess : t.clients.archiveSuccess);
       await fetchClients();
       if (selectedClientDetail && selectedClientDetail.client.id === client.id) {
         setSelectedClientDetail({
@@ -228,7 +240,7 @@ export const ClientsPage: React.FC = () => {
         });
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur modification statut');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
       setTimeout(() => setSuccessMsg(null), 3500);
@@ -255,11 +267,11 @@ export const ClientsPage: React.FC = () => {
 
     const amount = Number(quickCreanceData.montant_total);
     if (isNaN(amount) || amount <= 0) {
-      setErrorMsg('Veuillez saisir un montant supérieur à 0 FCFA');
+      setErrorMsg(locale === 'ar' ? 'يرجى إدخال مبلغ أكبر من 0' : 'Veuillez saisir un montant supérieur à 0');
       return;
     }
     if (!quickCreanceData.date_echeance) {
-      setErrorMsg('Veuillez choisir une date d\'échéance');
+      setErrorMsg(locale === 'ar' ? 'يرجى تحديد تاريخ الاستحقاق' : 'Veuillez choisir une date d\'échéance');
       return;
     }
 
@@ -277,14 +289,14 @@ export const ClientsPage: React.FC = () => {
         }),
       });
 
-      setSuccessMsg(`Créance de ${amount.toLocaleString('fr-FR')} FCFA créée pour ${editingClient.nom}`);
+      setSuccessMsg(t.creances.createSuccess);
       setIsQuickCreanceModalOpen(false);
       await fetchClients();
       if (selectedClientDetail && selectedClientDetail.client.id === editingClient.id) {
         openClientDetail(editingClient);
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur création créance');
+      setErrorMsg(err instanceof Error ? err.message : t.common.error);
     } finally {
       setActionLoading(false);
       setTimeout(() => setSuccessMsg(null), 3500);
@@ -337,7 +349,7 @@ export const ClientsPage: React.FC = () => {
         <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
           <AlertTriangle size={15} />
           <span>{errorMsg}</span>
-          <button type="button" onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
+          <button type="button" onClick={() => setErrorMsg(null)} style={{ [isRtl ? 'marginRight' : 'marginLeft']: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
@@ -345,11 +357,11 @@ export const ClientsPage: React.FC = () => {
         <div style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
           <CheckCircle2 size={15} />
           <span>{successMsg}</span>
-          <button type="button" onClick={() => setSuccessMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
+          <button type="button" onClick={() => setSuccessMsg(null)} style={{ [isRtl ? 'marginRight' : 'marginLeft']: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={14} /></button>
         </div>
       )}
 
-      {/* Unified Compact Top Bar : Titre, Recherche, Filtres, Actions & KPIs */}
+      {/* Unified Compact Top Bar */}
       <div
         style={{
           background: 'var(--bg-surface)',
@@ -371,14 +383,14 @@ export const ClientsPage: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-                Clients
+                {t.clients.title}
               </h1>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
                 {filteredClients.length}
               </span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Restant dû : <strong style={{ color: '#f87171' }}>{globalStats.totalBalance.toLocaleString('fr-FR')} F</strong> • Encaissé : <strong style={{ color: '#34d399' }}>{globalStats.totalCollected.toLocaleString('fr-FR')} F</strong>
+              {t.clients.outstandingBalance} : <strong style={{ color: '#f87171' }}>{formatAmount(globalStats.totalBalance)} {t.common.currency}</strong> • {t.clients.totalPaid} : <strong style={{ color: '#34d399' }}>{formatAmount(globalStats.totalCollected)} {t.common.currency}</strong>
             </div>
           </div>
         </div>
@@ -403,7 +415,7 @@ export const ClientsPage: React.FC = () => {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher nom, tél..."
+            placeholder={`${t.common.search}...`}
             style={{
               background: 'transparent',
               border: 'none',
@@ -437,7 +449,7 @@ export const ClientsPage: React.FC = () => {
                 color: statusFilter === 'active' ? 'white' : 'var(--text-secondary)',
               }}
             >
-              Actifs ({globalStats.activeClients})
+              {t.clients.filterActive} ({globalStats.activeClients})
             </button>
             <button
               type="button"
@@ -453,7 +465,7 @@ export const ClientsPage: React.FC = () => {
                 color: statusFilter === 'with_balance' ? '#f87171' : 'var(--text-secondary)',
               }}
             >
-              Avec dette ({globalStats.debtorsCount})
+              {t.clients.filterWithBalance} ({globalStats.debtorsCount})
             </button>
             <button
               type="button"
@@ -469,7 +481,7 @@ export const ClientsPage: React.FC = () => {
                 color: statusFilter === 'all' ? 'white' : 'var(--text-secondary)',
               }}
             >
-              Tous ({clients.length})
+              {t.clients.filterAll} ({clients.length})
             </button>
           </div>
 
@@ -478,7 +490,7 @@ export const ClientsPage: React.FC = () => {
             onClick={fetchClients}
             className="btn btn-secondary btn-sm"
             style={{ padding: '0.35rem 0.55rem' }}
-            title="Actualiser"
+            title={t.common.refresh}
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -490,16 +502,16 @@ export const ClientsPage: React.FC = () => {
             style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem', backgroundColor: primaryColor, borderColor: primaryColor }}
           >
             <Plus size={14} />
-            <span>Nouveau client</span>
+            <span>{t.clients.newClient}</span>
           </button>
         </div>
       </div>
 
-      {/* High-density Client Table on Desktop / Compact cards on Mobile */}
+      {/* High-density Client Table */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
           <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.75rem auto' }} />
-          <div style={{ fontSize: '0.85rem' }}>Chargement des clients...</div>
+          <div style={{ fontSize: '0.85rem' }}>{t.common.loading}</div>
         </div>
       ) : filteredClients.length === 0 ? (
         <div
@@ -513,7 +525,7 @@ export const ClientsPage: React.FC = () => {
         >
           <Users size={28} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem auto' }} />
           <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>
-            {search ? 'Aucun client ne correspond à la recherche' : 'Aucun client pour l\'instant'}
+            {search ? t.clients.noClientsFound : t.clients.subtitle}
           </div>
           <button
             type="button"
@@ -522,7 +534,7 @@ export const ClientsPage: React.FC = () => {
             style={{ marginTop: '1rem', backgroundColor: primaryColor, borderColor: primaryColor }}
           >
             <Plus size={14} />
-            <span>Ajouter un premier client</span>
+            <span>{t.clients.newClient}</span>
           </button>
         </div>
       ) : (
@@ -534,19 +546,19 @@ export const ClientsPage: React.FC = () => {
             overflow: 'hidden',
           }}
         >
-          {/* Desktop Table View */}
+          {/* Table View */}
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: isRtl ? 'right' : 'left', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Client</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Contact (WhatsApp)</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>Type</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>Créances</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Total Facturé</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Déjà Payé</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Solde Dû</th>
-                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.clients.name}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.common.phone} (WhatsApp)</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700 }}>{t.clients.type}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: 'center' }}>{t.clients.receivablesCount}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.clients.totalOwed}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.clients.totalPaid}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.clients.outstandingBalance}</th>
+                  <th style={{ padding: '0.65rem 0.85rem', fontWeight: 700, textAlign: isRtl ? 'left' : 'right' }}>{t.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -596,8 +608,8 @@ export const ClientsPage: React.FC = () => {
                           <div>
                             <span style={{ fontWeight: 700, color: 'white' }}>{client.nom}</span>
                             {!client.actif && (
-                              <span style={{ marginLeft: '0.35rem', fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185' }}>
-                                Archivé
+                              <span style={{ [isRtl ? 'marginRight' : 'marginLeft']: '0.35rem', fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185' }}>
+                                {t.common.inactive}
                               </span>
                             )}
                           </div>
@@ -606,7 +618,7 @@ export const ClientsPage: React.FC = () => {
 
                       {/* Téléphone */}
                       <td style={{ padding: '0.65rem 0.85rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', direction: 'ltr', justifyContent: isRtl ? 'flex-end' : 'flex-start' }}>
                           <span style={{ color: 'var(--text-secondary)' }}>{client.telephone}</span>
                           {waPhone && (
                             <a
@@ -614,7 +626,7 @@ export const ClientsPage: React.FC = () => {
                               target="_blank"
                               rel="noreferrer"
                               onClick={e => e.stopPropagation()}
-                              title="Ouvrir WhatsApp"
+                              title="WhatsApp"
                               style={{ color: '#22c55e', display: 'flex', alignItems: 'center' }}
                             >
                               <Send size={12} />
@@ -626,7 +638,7 @@ export const ClientsPage: React.FC = () => {
                       {/* Type */}
                       <td style={{ padding: '0.65rem 0.85rem' }}>
                         <span style={{ fontSize: '0.68rem', padding: '0.12rem 0.4rem', borderRadius: '3px', background: client.type === 'entreprise' ? '#6366f115' : 'rgba(255,255,255,0.05)', color: client.type === 'entreprise' ? '#a5b4fc' : 'var(--text-muted)' }}>
-                          {client.type === 'entreprise' ? 'Société' : 'Particulier'}
+                          {client.type === 'entreprise' ? t.clients.company : t.clients.individual}
                         </span>
                       </td>
 
@@ -636,17 +648,17 @@ export const ClientsPage: React.FC = () => {
                       </td>
 
                       {/* Total facturé */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                        {summary.totalDue.toLocaleString('fr-FR')} F
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right', color: 'var(--text-secondary)' }}>
+                        {formatAmount(summary.totalDue)} {t.common.currency}
                       </td>
 
                       {/* Total payé */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right', color: '#34d399' }}>
-                        {summary.totalPaid.toLocaleString('fr-FR')} F
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right', color: '#34d399' }}>
+                        {formatAmount(summary.totalPaid)} {t.common.currency}
                       </td>
 
                       {/* Solde restant dû */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right' }}>
                         <span
                           style={{
                             fontWeight: 800,
@@ -657,19 +669,19 @@ export const ClientsPage: React.FC = () => {
                             border: hasDebt ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
                           }}
                         >
-                          {summary.balance.toLocaleString('fr-FR')} F
+                          {formatAmount(summary.balance)} {t.common.currency}
                         </span>
                       </td>
 
                       {/* Actions rapides */}
-                      <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.35rem' }} onClick={e => e.stopPropagation()}>
+                      <td style={{ padding: '0.65rem 0.85rem', textAlign: isRtl ? 'left' : 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: isRtl ? 'flex-start' : 'flex-end', gap: '0.35rem' }} onClick={e => e.stopPropagation()}>
                           <button
                             type="button"
                             onClick={(e) => handleOpenQuickCreance(client, e)}
                             className="btn btn-secondary btn-sm"
                             style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem' }}
-                            title="Ajouter une créance"
+                            title={t.creances.newReceivable}
                           >
                             <Plus size={12} />
                           </button>
@@ -678,7 +690,7 @@ export const ClientsPage: React.FC = () => {
                             onClick={(e) => handleOpenEdit(client, e)}
                             className="btn btn-secondary btn-sm"
                             style={{ padding: '0.25rem 0.45rem', fontSize: '0.72rem' }}
-                            title="Modifier"
+                            title={t.common.edit}
                           >
                             <Edit2 size={12} />
                           </button>
@@ -688,7 +700,7 @@ export const ClientsPage: React.FC = () => {
                             className="btn btn-primary btn-sm"
                             style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', backgroundColor: primaryColor, borderColor: primaryColor }}
                           >
-                            Fiche
+                            {t.clients.clientDetails}
                           </button>
                         </div>
                       </td>
@@ -701,9 +713,7 @@ export const ClientsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 1 : FICHE CLIENT COMPACTE & DIRECTE */}
-      {/* ==================================================== */}
+      {/* MODAL 1 : FICHE CLIENT */}
       {isDetailModalOpen && (
         <div
           style={{
@@ -737,7 +747,7 @@ export const ClientsPage: React.FC = () => {
             }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header : Identité & Actions */}
+            {/* Modal Header */}
             <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                 <div
@@ -759,7 +769,7 @@ export const ClientsPage: React.FC = () => {
                   <h3 style={{ color: 'white', margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
                     {selectedClientDetail?.client.nom}
                   </h3>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', direction: 'ltr', textAlign: isRtl ? 'right' : 'left' }}>
                     {selectedClientDetail?.client.telephone} {selectedClientDetail?.client.email ? `• ${selectedClientDetail.client.email}` : ''}
                   </div>
                 </div>
@@ -773,10 +783,10 @@ export const ClientsPage: React.FC = () => {
                       onClick={() => handleToggleStatus(selectedClientDetail.client)}
                       className="btn btn-secondary btn-sm"
                       style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem' }}
-                      title={selectedClientDetail.client.actif ? 'Archiver' : 'Réactiver'}
+                      title={selectedClientDetail.client.actif ? t.common.inactive : t.common.active}
                     >
                       {selectedClientDetail.client.actif ? <Archive size={12} /> : <RotateCcw size={12} />}
-                      <span style={{ marginLeft: '0.25rem' }}>{selectedClientDetail.client.actif ? 'Archiver' : 'Réactiver'}</span>
+                      <span style={{ [isRtl ? 'marginRight' : 'marginLeft']: '0.25rem' }}>{selectedClientDetail.client.actif ? t.common.inactive : t.common.active}</span>
                     </button>
                     <button
                       type="button"
@@ -784,14 +794,14 @@ export const ClientsPage: React.FC = () => {
                       className="btn btn-secondary btn-sm"
                       style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem' }}
                     >
-                      Modifier
+                      {t.common.edit}
                     </button>
                   </>
                 )}
                 <button
                   type="button"
                   onClick={() => setIsDetailModalOpen(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '0.4rem' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', [isRtl ? 'marginRight' : 'marginLeft']: '0.4rem' }}
                 >
                   <X size={18} />
                 </button>
@@ -803,37 +813,37 @@ export const ClientsPage: React.FC = () => {
               {detailLoading || !selectedClientDetail ? (
                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   <Sparkles className="animate-spin" size={24} color={primaryColor} style={{ margin: '0 auto 0.5rem auto' }} />
-                  <div>Chargement des données...</div>
+                  <div>{t.common.loading}</div>
                 </div>
               ) : (
                 <>
-                  {/* Niveau 1 : Situation Financière Directe (Visible immédiatement en haut) */}
+                  {/* Financial Overview */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
                     <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Total Facturé / Dû</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t.clients.totalOwed}</div>
                       <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'white', marginTop: '0.15rem' }}>
-                        {selectedClientDetail.financialSummary.totalDue.toLocaleString('fr-FR')} F
+                        {formatAmount(selectedClientDetail.financialSummary.totalDue)} {t.common.currency}
                       </div>
                     </div>
 
                     <div style={{ background: 'var(--bg-main)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.7rem', color: '#34d399' }}>Total Encaissé</div>
+                      <div style={{ fontSize: '0.7rem', color: '#34d399' }}>{t.clients.totalPaid}</div>
                       <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#34d399', marginTop: '0.15rem' }}>
-                        {selectedClientDetail.financialSummary.totalPaid.toLocaleString('fr-FR')} F
+                        {formatAmount(selectedClientDetail.financialSummary.totalPaid)} {t.common.currency}
                       </div>
                     </div>
 
                     <div style={{ background: 'var(--bg-main)', border: selectedClientDetail.financialSummary.balance > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
                       <div style={{ fontSize: '0.7rem', color: selectedClientDetail.financialSummary.balance > 0 ? '#f87171' : 'var(--text-muted)' }}>
-                        Solde Restant à Payer
+                        {t.clients.outstandingBalance}
                       </div>
                       <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedClientDetail.financialSummary.balance > 0 ? '#f87171' : 'white', marginTop: '0.15rem' }}>
-                        {selectedClientDetail.financialSummary.balance.toLocaleString('fr-FR')} F
+                        {formatAmount(selectedClientDetail.financialSummary.balance)} {t.common.currency}
                       </div>
                     </div>
                   </div>
 
-                  {/* Actions d'encaissement et contact */}
+                  {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <button
                       type="button"
@@ -842,12 +852,14 @@ export const ClientsPage: React.FC = () => {
                       style={{ backgroundColor: primaryColor, borderColor: primaryColor, display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.76rem', padding: '0.4rem 0.75rem' }}
                     >
                       <Plus size={13} />
-                      <span>Ajouter une créance</span>
+                      <span>{t.creances.newReceivable}</span>
                     </button>
 
                     <a
                       href={`https://wa.me/${selectedClientDetail.client.telephone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                        `Bonjour ${selectedClientDetail.client.nom}, vous avez un solde de ${selectedClientDetail.financialSummary.balance.toLocaleString('fr-FR')} FCFA sur votre compte ${company?.nom}. Merci de procéder au règlement.`
+                        locale === 'ar'
+                          ? `مرحباً ${selectedClientDetail.client.nom}، نود تذكيركم بأن لديكم رصيداً مستحقاً قدره ${formatAmount(selectedClientDetail.financialSummary.balance)} ${t.common.currency} لدى ${company?.nom}. شكراً لكم على المبادرة بالسداد.`
+                          : `Bonjour ${selectedClientDetail.client.nom}, vous avez un solde de ${selectedClientDetail.financialSummary.balance.toLocaleString('fr-FR')} FCFA sur votre compte ${company?.nom}. Merci de procéder au règlement.`
                       )}`}
                       target="_blank"
                       rel="noreferrer"
@@ -855,20 +867,20 @@ export const ClientsPage: React.FC = () => {
                       style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none', fontSize: '0.76rem', padding: '0.4rem 0.75rem', color: '#22c55e' }}
                     >
                       <Send size={13} />
-                      <span>Contacter sur WhatsApp</span>
+                      <span>{t.demandes.shareWhatsApp}</span>
                     </a>
                   </div>
 
-                  {/* Créances du client (Compact list) */}
+                  {/* Créances du client */}
                   <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <FileText size={15} color={primaryColor} />
-                      <span>Créances ({selectedClientDetail.creances.length})</span>
+                      <span>{t.clients.receivablesHistory} ({selectedClientDetail.creances.length})</span>
                     </div>
 
                     {selectedClientDetail.creances.length === 0 ? (
                       <div style={{ padding: '0.85rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)' }}>
-                        Aucune créance enregistrée.
+                        {t.creances.noCreancesFound}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -888,12 +900,12 @@ export const ClientsPage: React.FC = () => {
                           >
                             <div>
                               <div style={{ fontWeight: 700, color: 'white' }}>{cr.motif}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Échéance : {cr.date_echeance}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t.creances.dueDate} : {cr.date_echeance}</div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontWeight: 800, color: 'white' }}>{cr.montant_total.toLocaleString('fr-FR')} F</div>
+                            <div style={{ textAlign: isRtl ? 'left' : 'right' }}>
+                              <div style={{ fontWeight: 800, color: 'white' }}>{formatAmount(cr.montant_total)} {t.common.currency}</div>
                               <div style={{ fontSize: '0.7rem', color: cr.solde > 0 ? '#f87171' : '#34d399' }}>
-                                Solde : {cr.solde.toLocaleString('fr-FR')} F
+                                {t.creances.remainingBalance} : {formatAmount(cr.solde)} {t.common.currency}
                               </div>
                             </div>
                           </div>
@@ -902,16 +914,16 @@ export const ClientsPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Règlements (Compact list) */}
+                  {/* Règlements */}
                   <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <CreditCard size={15} color="#34d399" />
-                      <span>Historique des paiements ({selectedClientDetail.paiements.length})</span>
+                      <span>{t.clients.paymentsHistory} ({selectedClientDetail.paiements.length})</span>
                     </div>
 
                     {selectedClientDetail.paiements.length === 0 ? (
                       <div style={{ padding: '0.85rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)' }}>
-                        Aucun paiement enregistré pour ce client.
+                        {t.paiements.noPaymentsFound}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -933,7 +945,7 @@ export const ClientsPage: React.FC = () => {
                               <strong style={{ color: 'white' }}>{p.reference}</strong> ({p.moyen_paiement}) • {p.date_paiement}
                             </div>
                             <div style={{ fontWeight: 800, color: '#34d399' }}>
-                              +{p.montant.toLocaleString('fr-FR')} F
+                              +{formatAmount(p.montant)} {t.common.currency}
                             </div>
                           </div>
                         ))}
@@ -947,9 +959,7 @@ export const ClientsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 2 : FORMULAIRE COMPACT AJOUT / MODIF CLIENT */}
-      {/* ==================================================== */}
+      {/* MODAL 2 : AJOUT / MODIF CLIENT */}
       {isCreateModalOpen && (
         <div
           style={{
@@ -982,7 +992,7 @@ export const ClientsPage: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
-                {editingClient ? 'Modifier le client' : 'Nouveau client'}
+                {editingClient ? t.clients.editClient : t.clients.newClient}
               </h3>
               <button
                 type="button"
@@ -1010,7 +1020,7 @@ export const ClientsPage: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  Particulier
+                  {t.clients.individual}
                 </button>
                 <button
                   type="button"
@@ -1026,22 +1036,22 @@ export const ClientsPage: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  Entreprise
+                  {t.clients.company}
                 </button>
               </div>
 
-              {/* Nom & Téléphone sur 2 colonnes */}
+              {/* Nom & Téléphone */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Nom complet *
+                    {t.clients.name} *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.nom}
                     onChange={e => setFormData({ ...formData, nom: e.target.value })}
-                    placeholder="M. Kouamé Patrice"
+                    placeholder={locale === 'ar' ? 'السيد أحمد كواسي' : 'M. Kouamé Patrice'}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -1057,7 +1067,7 @@ export const ClientsPage: React.FC = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Téléphone (WhatsApp) *
+                    {t.common.phone} (WhatsApp) *
                   </label>
                   <input
                     type="tel"
@@ -1074,22 +1084,24 @@ export const ClientsPage: React.FC = () => {
                       color: 'white',
                       fontSize: '0.84rem',
                       outline: 'none',
+                      direction: 'ltr',
+                      textAlign: isRtl ? 'right' : 'left',
                     }}
                   />
                 </div>
               </div>
 
-              {/* Email & Adresse sur 2 colonnes */}
+              {/* Email & Adresse */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Email (optionnel)
+                    {t.common.email}
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="patrice@email.com"
+                    placeholder="client@email.com"
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -1099,19 +1111,21 @@ export const ClientsPage: React.FC = () => {
                       color: 'white',
                       fontSize: '0.84rem',
                       outline: 'none',
+                      direction: 'ltr',
+                      textAlign: isRtl ? 'right' : 'left',
                     }}
                   />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Adresse / Quartier
+                    {t.clients.address}
                   </label>
                   <input
                     type="text"
                     value={formData.adresse}
                     onChange={e => setFormData({ ...formData, adresse: e.target.value })}
-                    placeholder="Cocody, Abidjan"
+                    placeholder={locale === 'ar' ? 'الحي، المدينة' : 'Cocody, Abidjan'}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -1129,13 +1143,13 @@ export const ClientsPage: React.FC = () => {
               {/* Notes */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                  Notes internes
+                  {t.common.notes}
                 </label>
                 <input
                   type="text"
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Notes sur ce client..."
+                  placeholder={locale === 'ar' ? 'ملاحظات إضافية...' : 'Notes sur ce client...'}
                   style={{
                     width: '100%',
                     padding: '0.55rem 0.75rem',
@@ -1156,7 +1170,7 @@ export const ClientsPage: React.FC = () => {
                   className="btn btn-secondary btn-sm"
                   disabled={actionLoading}
                 >
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
@@ -1164,7 +1178,7 @@ export const ClientsPage: React.FC = () => {
                   className="btn btn-primary btn-sm"
                   style={{ backgroundColor: primaryColor, borderColor: primaryColor }}
                 >
-                  {actionLoading ? 'Enregistrement...' : editingClient ? 'Enregistrer' : 'Créer le client'}
+                  {actionLoading ? t.common.saving : editingClient ? t.common.save : t.clients.newClient}
                 </button>
               </div>
             </form>
@@ -1172,9 +1186,7 @@ export const ClientsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ==================================================== */}
-      {/* MODAL 3 : CRÉATION RAPIDE DE CRÉANCE POUR UN CLIENT */}
-      {/* ==================================================== */}
+      {/* MODAL 3 : CRÉATION RAPIDE DE CRÉANCE */}
       {isQuickCreanceModalOpen && editingClient && (
         <div
           style={{
@@ -1208,10 +1220,10 @@ export const ClientsPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div>
                 <h3 style={{ color: 'white', margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>
-                  Nouvelle créance
+                  {t.creances.newReceivable}
                 </h3>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Pour : <strong style={{ color: 'white' }}>{editingClient.nom}</strong>
+                  {t.common.client} : <strong style={{ color: 'white' }}>{editingClient.nom}</strong>
                 </div>
               </div>
               <button
@@ -1226,11 +1238,14 @@ export const ClientsPage: React.FC = () => {
             <form onSubmit={handleCreateQuickCreance} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                  Motif de la créance *
+                  {t.creances.motif} *
                 </label>
-                <select
+                <input
+                  type="text"
+                  required
                   value={quickCreanceData.motif}
                   onChange={e => setQuickCreanceData({ ...quickCreanceData, motif: e.target.value })}
+                  placeholder={locale === 'ar' ? 'مثال: خدمات مهنية، صيانة، تنظيف' : 'Ex: Prestation de service, Nettoyage'}
                   style={{
                     width: '100%',
                     padding: '0.55rem 0.75rem',
@@ -1241,22 +1256,13 @@ export const ClientsPage: React.FC = () => {
                     fontSize: '0.84rem',
                     outline: 'none',
                   }}
-                >
-                  <option value="Prestation de service">Prestation de service</option>
-                  <option value="Produit / Marchandise">Produit / Marchandise</option>
-                  <option value="Réparation / SAV">Réparation / SAV</option>
-                  <option value="Scolarité / Formation">Scolarité / Formation</option>
-                  <option value="Nettoyage / Pressing">Nettoyage / Pressing</option>
-                  <option value="Commande / Facture">Commande / Facture</option>
-                  <option value="Honoraires">Honoraires</option>
-                  <option value="Autre">Autre</option>
-                </select>
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Montant total (FCFA) *
+                    {t.creances.initialAmount} ({t.common.currency}) *
                   </label>
                   <input
                     type="number"
@@ -1264,7 +1270,7 @@ export const ClientsPage: React.FC = () => {
                     required
                     value={quickCreanceData.montant_total}
                     onChange={e => setQuickCreanceData({ ...quickCreanceData, montant_total: e.target.value })}
-                    placeholder="Ex: 50000"
+                    placeholder="50000"
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -1274,13 +1280,14 @@ export const ClientsPage: React.FC = () => {
                       color: 'white',
                       fontSize: '0.84rem',
                       outline: 'none',
+                      direction: 'ltr',
                     }}
                   />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                    Date d'échéance *
+                    {t.creances.dueDate} *
                   </label>
                   <input
                     type="date"
@@ -1303,13 +1310,13 @@ export const ClientsPage: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>
-                  Description des prestations
+                  {t.creances.description}
                 </label>
                 <input
                   type="text"
                   value={quickCreanceData.description}
                   onChange={e => setQuickCreanceData({ ...quickCreanceData, description: e.target.value })}
-                  placeholder="Détails facturés..."
+                  placeholder={locale === 'ar' ? 'تفاصيل إضافية...' : 'Détails facturés...'}
                   style={{
                     width: '100%',
                     padding: '0.55rem 0.75rem',
@@ -1330,7 +1337,7 @@ export const ClientsPage: React.FC = () => {
                   className="btn btn-secondary btn-sm"
                   disabled={actionLoading}
                 >
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
@@ -1338,7 +1345,7 @@ export const ClientsPage: React.FC = () => {
                   className="btn btn-primary btn-sm"
                   style={{ backgroundColor: primaryColor, borderColor: primaryColor }}
                 >
-                  {actionLoading ? 'Enregistrement...' : 'Valider la créance'}
+                  {actionLoading ? t.common.saving : t.creances.newReceivable}
                 </button>
               </div>
             </form>
