@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local accidental folders
+Git-commit-m-V1-termin-/
